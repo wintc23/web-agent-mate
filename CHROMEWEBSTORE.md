@@ -34,5 +34,6 @@ Web page text, selected text, URLs, visible control metadata, prompts, authentic
 
 ## Version history
 
+- 0.2.2 — Fixed a Side Panel startup failure caused by a missing React runtime import.
 - 0.2.1 — Added built-in Agent tasks, guarded webpage actions, user approval, cancellation, and system/light/dark themes.
 - 0.1.1 — Added contextual OrcaRouter chat and optional local conversation storage.

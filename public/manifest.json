@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArvo07eYDpIR42qmqMfVCXGlcY0lLzPafEcUw2ER177NoPYuQ6sWGJVUwfkpskiNnpLcEmA55mHsInGHXhGBnCvQItSSOegf6UFTGlmC9yxwhpmCV2IGS2ycIYgx3sVAQ6PM+0qaMUwJs169A7PTwPgaFn3qRR3o4CjO5mik0v5hsthdh2KLVH0IGBuPg4dm0mGxOudPFFSL7dw9r96phl+sp7DYg/9zmfzp22oqRHSj3402+aAqqVx5a7lYB9Myep6bMLrKEaVeIX1e2RS4xewCon7mJGOfFOUrA7LDpX0iFvCnOzwm8J7ynTuFY9rPQYC5GvazL4x5qM+ImHDv87wIDAQAB",
   "name": "__MSG_appName__",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "__MSG_appDescription__",
   "default_locale": "en",
   "permissions": ["identity", "storage", "sidePanel", "nativeMessaging", "scripting", "tabs"],
