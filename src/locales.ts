@@ -20,7 +20,10 @@ const en = {
   errorProvider: "OrcaRouter is temporarily unavailable. Please try again.", language: "Language", languageAuto: "Follow browser"
   , chat: "Chat", connection: "Connections", readPage: "Read current page", pageReady: "Page ready: {title}",
   askPlaceholder: "Ask about this page…", send: "Send", summary: "Summarize", explain: "Explain", keyPoints: "Key points",
-  translatePage: "Translate", permissionNeeded: "Allow access to this page to continue.", pageNotReady: "Read the current page first."
+  translatePage: "Translate", permissionNeeded: "Allow access to this page to continue.", pageNotReady: "Read the current page first.",
+  agentMode: "Agent", agentDescription: "The built-in agent can inspect and operate the current page through the local Bridge.",
+  agentPlaceholder: "Describe what you want completed on this page…", runAgent: "Run agent", agentSafety: "Clicks require approval. Passwords, payments, CAPTCHA, deletion and publishing are blocked.",
+  approveAction: "Approve page action?", approve: "Approve", cancelAgent: "Stop task"
 };
 
 export type TranslationKey = keyof typeof en;
@@ -42,7 +45,9 @@ const zhCN: Dictionary = {
   language: "语言", languageAuto: "跟随浏览器"
   , chat: "对话", connection: "连接", readPage: "读取当前网页", pageReady: "已读取：{title}",
   askPlaceholder: "针对当前网页提问…", send: "发送", summary: "总结", explain: "解释", keyPoints: "关键要点",
-  translatePage: "翻译", permissionNeeded: "请允许访问当前网页后继续。", pageNotReady: "请先读取当前网页。"
+  translatePage: "翻译", permissionNeeded: "请允许访问当前网页后继续。", pageNotReady: "请先读取当前网页。",
+  agentMode: "Agent", agentDescription: "内置 Agent 可通过本地 Bridge 观察并操作当前网页。", agentPlaceholder: "描述希望在当前网页完成的事情…",
+  runAgent: "运行 Agent", agentSafety: "点击操作需要确认；禁止密码、支付、验证码、删除和发布操作。", approveAction: "批准网页操作？", approve: "批准", cancelAgent: "停止任务"
 };
 
 const zhTW: Dictionary = {
@@ -61,7 +66,9 @@ const zhTW: Dictionary = {
   language: "語言", languageAuto: "跟隨瀏覽器"
   , chat: "對話", connection: "連線", readPage: "讀取目前網頁", pageReady: "已讀取：{title}",
   askPlaceholder: "針對目前網頁提問…", send: "傳送", summary: "摘要", explain: "解釋", keyPoints: "重點",
-  translatePage: "翻譯", permissionNeeded: "請允許存取目前網頁後繼續。", pageNotReady: "請先讀取目前網頁。"
+  translatePage: "翻譯", permissionNeeded: "請允許存取目前網頁後繼續。", pageNotReady: "請先讀取目前網頁。",
+  agentMode: "Agent", agentDescription: "內建 Agent 可透過本機 Bridge 觀察並操作目前網頁。", agentPlaceholder: "描述希望在目前網頁完成的事情…",
+  runAgent: "執行 Agent", agentSafety: "點擊操作需要確認；禁止密碼、付款、驗證碼、刪除和發佈操作。", approveAction: "核准網頁操作？", approve: "核准", cancelAgent: "停止任務"
 };
 
 const ja: Dictionary = {
@@ -80,7 +87,9 @@ const ja: Dictionary = {
   language: "言語", languageAuto: "ブラウザに合わせる"
   , chat: "チャット", connection: "接続", readPage: "現在のページを読み込む", pageReady: "読み込み済み：{title}",
   askPlaceholder: "このページについて質問…", send: "送信", summary: "要約", explain: "説明", keyPoints: "要点",
-  translatePage: "翻訳", permissionNeeded: "このページへのアクセスを許可してください。", pageNotReady: "先に現在のページを読み込んでください。"
+  translatePage: "翻訳", permissionNeeded: "このページへのアクセスを許可してください。", pageNotReady: "先に現在のページを読み込んでください。",
+  agentMode: "Agent", agentDescription: "内蔵AgentはローカルBridge経由で現在のページを確認・操作できます。", agentPlaceholder: "このページで完了したいことを入力…",
+  runAgent: "Agentを実行", agentSafety: "クリックには確認が必要です。パスワード、決済、CAPTCHA、削除、公開操作は禁止です。", approveAction: "ページ操作を承認しますか？", approve: "承認", cancelAgent: "タスクを停止"
 };
 
 const de: Dictionary = {
@@ -99,7 +108,9 @@ const de: Dictionary = {
   language: "Sprache", languageAuto: "Browsersprache"
   , chat: "Chat", connection: "Verbindungen", readPage: "Aktuelle Seite lesen", pageReady: "Seite bereit: {title}",
   askPlaceholder: "Diese Seite fragen…", send: "Senden", summary: "Zusammenfassen", explain: "Erklären", keyPoints: "Kernaussagen",
-  translatePage: "Übersetzen", permissionNeeded: "Bitte den Zugriff auf diese Seite erlauben.", pageNotReady: "Bitte zuerst die aktuelle Seite lesen."
+  translatePage: "Übersetzen", permissionNeeded: "Bitte den Zugriff auf diese Seite erlauben.", pageNotReady: "Bitte zuerst die aktuelle Seite lesen.",
+  agentMode: "Agent", agentDescription: "Der integrierte Agent kann die aktuelle Seite über die lokale Bridge prüfen und bedienen.", agentPlaceholder: "Beschreiben Sie die Aufgabe auf dieser Seite…",
+  runAgent: "Agent starten", agentSafety: "Klicks erfordern eine Bestätigung. Passwörter, Zahlungen, CAPTCHA, Löschen und Veröffentlichen sind gesperrt.", approveAction: "Seitenaktion genehmigen?", approve: "Genehmigen", cancelAgent: "Aufgabe stoppen"
 };
 
 const ptBR: Dictionary = {
@@ -118,7 +129,9 @@ const ptBR: Dictionary = {
   language: "Idioma", languageAuto: "Seguir o navegador"
   , chat: "Chat", connection: "Conexões", readPage: "Ler página atual", pageReady: "Página pronta: {title}",
   askPlaceholder: "Pergunte sobre esta página…", send: "Enviar", summary: "Resumir", explain: "Explicar", keyPoints: "Pontos principais",
-  translatePage: "Traduzir", permissionNeeded: "Permita o acesso a esta página para continuar.", pageNotReady: "Leia primeiro a página atual."
+  translatePage: "Traduzir", permissionNeeded: "Permita o acesso a esta página para continuar.", pageNotReady: "Leia primeiro a página atual.",
+  agentMode: "Agent", agentDescription: "O agente integrado pode observar e operar a página atual pela Bridge local.", agentPlaceholder: "Descreva o que deseja concluir nesta página…",
+  runAgent: "Executar agente", agentSafety: "Cliques exigem confirmação. Senhas, pagamentos, CAPTCHA, exclusão e publicação são bloqueados.", approveAction: "Aprovar ação na página?", approve: "Aprovar", cancelAgent: "Parar tarefa"
 };
 
 const dictionaries: Record<SupportedLanguage, Dictionary> = { en, zh_CN: zhCN, zh_TW: zhTW, pt_BR: ptBR, ja, de };

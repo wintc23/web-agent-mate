@@ -91,6 +91,10 @@ impl Bridge {
             "conversations.delete" => self.delete_conversation(&request.params),
             "messages.append" => self.append_message(&request.params),
             "storage.stats" => self.storage_stats(),
+            "agents.start" => self.start_agent(&request.params),
+            "agents.status" => self.agent_status(&request.params),
+            "agents.record_step" => self.record_agent_step(&request.params),
+            "agents.cancel" => self.cancel_agent(&request.params),
             _ => Err(BridgeError::detail("METHOD_NOT_FOUND", &request.method)),
         }
     }
@@ -227,6 +231,63 @@ impl Bridge {
             )
             .map_err(db_error)
     }
+
+    fn start_agent(&self, value: &Value) -> BridgeResult<Value> {
+        let goal = required_string(value, "goal", 10_000)?;
+        let page_url = required_string(value, "pageUrl", 8_192)?;
+        let id = Uuid::new_v4().to_string();
+        let now = now_millis();
+        self.db.execute(
+            "INSERT INTO agent_tasks (id,goal,page_url,status,step_count,max_steps,created_at,updated_at) VALUES (?,?,?,'running',0,?,?,?)",
+            params![id, goal, page_url, 12, now, now],
+        ).map_err(db_error)?;
+        Ok(json!({ "taskId": id, "status": "running", "stepCount": 0, "maxSteps": 12 }))
+    }
+
+    fn agent_status(&self, value: &Value) -> BridgeResult<Value> {
+        let id = required_string(value, "taskId", 100)?;
+        self.db.query_row(
+            "SELECT id,goal,page_url,status,step_count,max_steps,last_action,last_result,created_at,updated_at FROM agent_tasks WHERE id=?",
+            [&id], |row| Ok(json!({
+                "taskId": row.get::<_, String>(0)?, "goal": row.get::<_, String>(1)?,
+                "pageUrl": row.get::<_, String>(2)?, "status": row.get::<_, String>(3)?,
+                "stepCount": row.get::<_, i64>(4)?, "maxSteps": row.get::<_, i64>(5)?,
+                "lastAction": row.get::<_, Option<String>>(6)?, "lastResult": row.get::<_, Option<String>>(7)?,
+                "createdAt": row.get::<_, i64>(8)?, "updatedAt": row.get::<_, i64>(9)?,
+            }))
+        ).optional().map_err(db_error)?.ok_or_else(|| BridgeError::new("AGENT_TASK_NOT_FOUND"))
+    }
+
+    fn record_agent_step(&self, value: &Value) -> BridgeResult<Value> {
+        let id = required_string(value, "taskId", 100)?;
+        let action = required_string(value, "action", 20_000)?;
+        let result = required_string(value, "result", 20_000)?;
+        let requested_status =
+            optional_string(value, "status", 20).unwrap_or_else(|| "running".into());
+        if !matches!(
+            requested_status.as_str(),
+            "running" | "waiting_approval" | "completed" | "failed"
+        ) {
+            return Err(BridgeError::new("AGENT_STATUS_INVALID"));
+        }
+        let changed = self.db.execute(
+            "UPDATE agent_tasks SET status=?,step_count=step_count+1,last_action=?,last_result=?,updated_at=? WHERE id=? AND status!='cancelled' AND step_count<max_steps",
+            params![requested_status, action, result, now_millis(), id],
+        ).map_err(db_error)?;
+        if changed == 0 {
+            return Err(BridgeError::new("AGENT_TASK_NOT_RUNNING"));
+        }
+        self.agent_status(&json!({ "taskId": id }))
+    }
+
+    fn cancel_agent(&self, value: &Value) -> BridgeResult<Value> {
+        let id = required_string(value, "taskId", 100)?;
+        let changed = self.db.execute(
+            "UPDATE agent_tasks SET status='cancelled',updated_at=? WHERE id=? AND status NOT IN ('completed','cancelled')",
+            params![now_millis(), id],
+        ).map_err(db_error)?;
+        Ok(json!({ "cancelled": changed > 0 }))
+    }
 }
 
 fn open_database() -> BridgeResult<Connection> {
@@ -258,7 +319,14 @@ fn open_database() -> BridgeResult<Connection> {
          );
          CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at DESC);
          CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id,created_at);
-         PRAGMA user_version=1;"
+         CREATE TABLE IF NOT EXISTS agent_tasks (
+           id TEXT PRIMARY KEY, goal TEXT NOT NULL, page_url TEXT NOT NULL,
+           status TEXT NOT NULL CHECK(status IN ('running','waiting_approval','completed','failed','cancelled')),
+           step_count INTEGER NOT NULL, max_steps INTEGER NOT NULL,
+           last_action TEXT, last_result TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+         );
+         CREATE INDEX IF NOT EXISTS idx_agent_tasks_updated ON agent_tasks(updated_at DESC);
+         PRAGMA user_version=2;"
     ).map_err(db_error)?;
     set_private_file_permissions(&path)?;
     Ok(connection)

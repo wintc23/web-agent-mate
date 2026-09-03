@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { createRoot } from "react-dom/client";
-import { Alert, Button, Card, ConfigProvider, Descriptions, Empty, Flex, Input, Select, Space, Spin, Tag, Typography } from "antd";
-import { CheckCircleOutlined, CloudServerOutlined, DisconnectOutlined, FileSearchOutlined, LinkOutlined, ReloadOutlined, SendOutlined } from "@ant-design/icons";
+import { Alert, Button, Card, ConfigProvider, Descriptions, Empty, Flex, Input, Modal, Segmented, Select, Space, Spin, Tag, Typography, theme as antdTheme } from "antd";
+import { CheckCircleOutlined, CloudServerOutlined, DisconnectOutlined, FileSearchOutlined, LinkOutlined, MoonOutlined, ReloadOutlined, RobotOutlined, SendOutlined, SunOutlined } from "@ant-design/icons";
 import "antd/dist/reset.css";
 import "./style.css";
-import type { AuthStatus, BackgroundRequest, BackgroundResponse, ChatMessage, PageContext } from "./messages";
+import type { AgentResult, AuthStatus, BackgroundRequest, BackgroundResponse, ChatMessage, PageContext } from "./messages";
 import {
   LANGUAGE_OPTIONS,
   resolveLanguage,
@@ -15,6 +15,8 @@ import {
 } from "./locales";
 
 const LANGUAGE_STORAGE_KEY = "language_preference";
+const THEME_STORAGE_KEY = "theme_preference";
+type ThemePreference = "system" | "light" | "dark";
 
 type Notice = { text: string; kind: "info" | "success" | "error" } | null;
 
@@ -28,6 +30,12 @@ function App(): JSX.Element {
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string>();
+  const [mode, setMode] = useState<"ask" | "agent">("ask");
+  const [agentGoal, setAgentGoal] = useState("");
+  const [agentResult, setAgentResult] = useState<AgentResult>();
+  const [themePreference, setThemePreference] = useState<ThemePreference>("system");
+  const [systemDark, setSystemDark] = useState(() => matchMedia("(prefers-color-scheme: dark)").matches);
+  const dark = themePreference === "dark" || (themePreference === "system" && systemDark);
   const t = useCallback(
     (key: TranslationKey, params: Record<string, string | number> = {}) => translate(language, key, params),
     [language]
@@ -53,12 +61,22 @@ function App(): JSX.Element {
 
   useEffect(() => {
     void (async () => {
-      const stored = await chrome.storage.local.get(LANGUAGE_STORAGE_KEY);
+      const stored = await chrome.storage.local.get([LANGUAGE_STORAGE_KEY, THEME_STORAGE_KEY]);
       const next = isLanguagePreference(stored[LANGUAGE_STORAGE_KEY]) ? stored[LANGUAGE_STORAGE_KEY] : "auto";
       setPreference(next);
       setLanguage(resolveLanguage(next));
+      if (["system", "light", "dark"].includes(stored[THEME_STORAGE_KEY])) setThemePreference(stored[THEME_STORAGE_KEY]);
     })();
   }, []);
+
+  useEffect(() => {
+    const media = matchMedia("(prefers-color-scheme: dark)");
+    const update = (event: MediaQueryListEvent) => setSystemDark(event.matches);
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => { document.documentElement.dataset.theme = dark ? "dark" : "light"; }, [dark]);
 
   useEffect(() => void refresh(), [refresh]);
 
@@ -130,6 +148,30 @@ function App(): JSX.Element {
     }
   };
 
+  const runAgent = async () => {
+    if (!agentGoal.trim()) return;
+    setBusy(true); setNotice(null);
+    try {
+      const response = await send({ type: "agent:start", goal: agentGoal.trim() });
+      if (!response.ok) throw new Error(response.error);
+      setAgentResult(response.data as AgentResult);
+    } catch (error) { setNotice({ text: t(errorMessageKey(readableError(error))), kind: "error" }); }
+    finally { setBusy(false); }
+  };
+
+  const respondToAgent = async (approved: boolean) => {
+    if (!agentResult?.taskId) return;
+    setBusy(true);
+    try {
+      const response = approved && agentResult.action
+        ? await send({ type: "agent:approve", taskId: agentResult.taskId, action: agentResult.action })
+        : await send({ type: "agent:cancel", taskId: agentResult.taskId });
+      if (!response.ok) throw new Error(response.error);
+      setAgentResult(response.data as AgentResult);
+    } catch (error) { setNotice({ text: t(errorMessageKey(readableError(error))), kind: "error" }); }
+    finally { setBusy(false); }
+  };
+
   const statusCopy = status
     ? !status.bridgeInstalled
       ? t(status.connected ? "connectedNoBridge" : "disconnectedNoBridge")
@@ -147,21 +189,23 @@ function App(): JSX.Element {
   );
 
   return (
-    <ConfigProvider theme={{ token: { colorPrimary: "#147a4c", borderRadius: 12, fontFamily: "Inter, system-ui, sans-serif" } }}>
+    <ConfigProvider theme={{ algorithm: dark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm, token: { colorPrimary: "#19c6a3", colorInfo: "#7c5cfc", borderRadius: 12, fontFamily: "Inter, system-ui, sans-serif", colorBgBase: dark ? "#090d14" : "#f5f8f8" } }}>
       <main className="shell">
         <Flex align="center" justify="space-between" gap={16} className="app-header">
           <Flex align="center" gap={12}>
             <img className="brand-mark" src="/icons/icon-48.png" alt="" />
             <div><Typography.Title level={4}>WebAgentMate</Typography.Title><Typography.Text type="secondary">{t("connectionExperiment")}</Typography.Text></div>
           </Flex>
+          <Flex gap={8}><Button aria-label="Theme" icon={dark ? <MoonOutlined /> : <SunOutlined />} onClick={async () => { const next: ThemePreference = themePreference === "system" ? "dark" : themePreference === "dark" ? "light" : "system"; setThemePreference(next); await chrome.storage.local.set({ [THEME_STORAGE_KEY]: next }); }} />
           <Select aria-label={t("language")} value={preference} options={languageOptions} onChange={async (next: LanguagePreference) => {
             setPreference(next);
             setLanguage(resolveLanguage(next));
             await chrome.storage.local.set({ [LANGUAGE_STORAGE_KEY]: next });
-          }} />
+          }} /></Flex>
         </Flex>
 
-        <Card className="chat-card" title={t("chat")} extra={<Button size="small" icon={<FileSearchOutlined />} loading={busy} onClick={() => void readPage()}>{t("readPage")}</Button>}>
+        <Segmented block value={mode} options={[{ label: t("chat"), value: "ask" }, { label: t("agentMode"), value: "agent", icon: <RobotOutlined /> }]} onChange={(value) => setMode(value as "ask" | "agent")} />
+        {mode === "ask" ? <Card className="chat-card" title={t("chat")} extra={<Button size="small" icon={<FileSearchOutlined />} loading={busy} onClick={() => void readPage()}>{t("readPage")}</Button>}>
           {page && <Typography.Text type="secondary" ellipsis title={page.title}>{t("pageReady", { title: page.title })}</Typography.Text>}
           <Flex gap={8} wrap className="quick-actions">
             {(["summary", "keyPoints", "explain", "translatePage"] as TranslationKey[]).map((key) => <Button key={key} size="small" disabled={busy || !page} onClick={() => void ask(key)}>{t(key)}</Button>)}
@@ -176,7 +220,18 @@ function App(): JSX.Element {
             <Input.TextArea value={prompt} onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setPrompt(event.target.value)} placeholder={t("askPlaceholder")} autoSize={{ minRows: 2, maxRows: 5 }} onPressEnter={(event: KeyboardEvent<HTMLTextAreaElement>) => { if (!event.shiftKey) { event.preventDefault(); void ask(); } }} />
             <Button type="primary" aria-label={t("send")} icon={<SendOutlined />} loading={busy} disabled={!prompt.trim() || !page} onClick={() => void ask()} />
           </Flex>
-        </Card>
+        </Card> : <Card className="chat-card agent-card" title={t("agentMode")}>
+          <Alert showIcon type="warning" message={t("agentSafety")} />
+          <Typography.Paragraph type="secondary">{t("agentDescription")}</Typography.Paragraph>
+          <Input.TextArea value={agentGoal} onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setAgentGoal(event.target.value)} placeholder={t("agentPlaceholder")} autoSize={{ minRows: 3, maxRows: 6 }} />
+          <Button className="agent-run" type="primary" icon={<RobotOutlined />} loading={busy} disabled={!status?.bridgeInstalled || !status.connected || !agentGoal.trim()} onClick={() => void runAgent()}>{t("runAgent")}</Button>
+          {agentResult && <Alert showIcon type={agentResult.status === "completed" ? "success" : "info"} message={agentResult.message} description={`${agentResult.stepCount} / 12`} />}
+        </Card>}
+
+        <Modal open={agentResult?.status === "waiting_approval"} title={t("approveAction")} okText={t("approve")} cancelText={t("cancelAgent")} confirmLoading={busy} onOk={() => void respondToAgent(true)} onCancel={() => void respondToAgent(false)}>
+          <Typography.Paragraph>{agentResult?.message}</Typography.Paragraph>
+          <Typography.Text code>{agentResult?.action?.name}</Typography.Text>
+        </Modal>
 
         <Card className="connection-card" title={t("connection")}>
           <Flex justify="space-between" align="flex-start" gap={12}>

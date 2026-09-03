@@ -2,7 +2,7 @@
 
 **Connect every web page to your AI agents.**
 
-WebAgentMate is a local-first Chrome side-panel assistant. The first usable release reads the current page, supports contextual multi-turn chat through OrcaRouter, and can persist conversations locally through an optional cross-platform Native Messaging Bridge.
+WebAgentMate is a local-first Chrome side-panel assistant. It supports contextual chat and a Bridge-powered built-in Agent that can carry out guarded actions on the current page.
 
 ## Features
 
@@ -11,10 +11,12 @@ WebAgentMate is a local-first Chrome side-panel assistant. The first usable rele
 - Summarize, explain, translate, extract key points, or ask a custom question
 - OrcaRouter OAuth 2.0 + PKCE; no WebAgentMate server is required
 - Optional Rust Bridge with embedded SQLite; no Rust, SQLite, Node.js, or Python required for release users
+- Built-in Agent loop with persistent tasks, step limits, cancellation, structured actions, and click approval
+- System, light, and dark themes using the WebAgentMate electric mint and violet palette
 - English, Simplified Chinese, Traditional Chinese, Portuguese (Brazil), Japanese, and German
 - Fixed extension identity for development and Web Store builds: `lmlkkallnnjijicmfmfdelnamcnhflfg`
 
-Local Codex, Claude, and Coco CLI adapters are the next Bridge milestone. The current Bridge protocol deliberately exposes conversation storage only; arbitrary command execution is not enabled.
+Local Codex, Claude, and Coco CLI adapters are the next Bridge milestone. The built-in Agent uses OrcaRouter and works without those CLIs. Arbitrary command execution is not enabled.
 
 ## Build the extension
 
@@ -63,6 +65,7 @@ The native host is `ai.webagentmate.bridge`. It currently supports:
 - `conversations.create`, `conversations.list`, `conversations.get`, `conversations.delete`
 - `messages.append`
 - `storage.stats`
+- `agents.start`, `agents.status`, `agents.record_step`, `agents.cancel`
 
 Native Messaging frames are capped at 1 MiB. The host manifest only permits the official extension ID.
 
