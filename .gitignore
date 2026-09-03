@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+bridge/target/
+release/artifacts/
+.DS_Store
+npm-debug.log*
+vite.config.ts.timestamp-*.js

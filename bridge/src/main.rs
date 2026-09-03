@@ -1,0 +1,438 @@
+use directories::ProjectDirs;
+use rusqlite::{params, Connection, OptionalExtension};
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+use std::fs;
+use std::io::{self, Read, Write};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
+
+const PROTOCOL_VERSION: u32 = 1;
+const MAX_MESSAGE_BYTES: usize = 1_048_576;
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Request {
+    id: String,
+    protocol_version: u32,
+    method: String,
+    #[serde(default)]
+    params: Value,
+}
+
+#[derive(Serialize)]
+struct Response {
+    id: String,
+    ok: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    result: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<ErrorBody>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ErrorBody {
+    code: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    detail: Option<String>,
+}
+
+#[derive(Debug)]
+struct BridgeError {
+    code: &'static str,
+    detail: Option<String>,
+}
+
+impl BridgeError {
+    fn new(code: &'static str) -> Self {
+        Self { code, detail: None }
+    }
+
+    fn detail(code: &'static str, detail: impl Into<String>) -> Self {
+        Self {
+            code,
+            detail: Some(detail.into()),
+        }
+    }
+}
+
+type BridgeResult<T> = Result<T, BridgeError>;
+
+struct Bridge {
+    db: Connection,
+    origin: String,
+}
+
+impl Bridge {
+    fn new(origin: String) -> BridgeResult<Self> {
+        if !origin.starts_with("chrome-extension://") || !origin.ends_with('/') {
+            return Err(BridgeError::new("ORIGIN_NOT_ALLOWED"));
+        }
+        let db = open_database()?;
+        Ok(Self { db, origin })
+    }
+
+    fn handle(&mut self, request: &Request) -> BridgeResult<Value> {
+        if request.protocol_version != PROTOCOL_VERSION {
+            return Err(BridgeError::new("PROTOCOL_VERSION_UNSUPPORTED"));
+        }
+        match request.method.as_str() {
+            "bridge.hello" => Ok(json!({
+                "name": "ai.webagentmate.bridge",
+                "version": env!("CARGO_PKG_VERSION"),
+                "protocolVersion": PROTOCOL_VERSION,
+                "platform": std::env::consts::OS,
+                "origin": self.origin,
+            })),
+            "conversations.create" => self.create_conversation(&request.params),
+            "conversations.list" => self.list_conversations(&request.params),
+            "conversations.get" => self.get_conversation(&request.params),
+            "conversations.delete" => self.delete_conversation(&request.params),
+            "messages.append" => self.append_message(&request.params),
+            "storage.stats" => self.storage_stats(),
+            _ => Err(BridgeError::detail("METHOD_NOT_FOUND", &request.method)),
+        }
+    }
+
+    fn create_conversation(&self, value: &Value) -> BridgeResult<Value> {
+        let id = Uuid::new_v4().to_string();
+        let now = now_millis();
+        let title =
+            optional_string(value, "title", 200).unwrap_or_else(|| "New conversation".into());
+        let provider =
+            optional_string(value, "provider", 50).unwrap_or_else(|| "orcarouter".into());
+        let model = optional_string(value, "model", 200).unwrap_or_default();
+        let page_url = optional_string(value, "pageUrl", 8_192);
+        let page_title = optional_string(value, "pageTitle", 500);
+        self.db.execute(
+            "INSERT INTO conversations (id,title,provider,model,page_url,page_title,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)",
+            params![id, title, provider, model, page_url, page_title, now, now],
+        ).map_err(db_error)?;
+        Ok(json!({ "id": id, "createdAt": now }))
+    }
+
+    fn list_conversations(&self, value: &Value) -> BridgeResult<Value> {
+        let limit = value
+            .get("limit")
+            .and_then(Value::as_u64)
+            .unwrap_or(50)
+            .clamp(1, 100);
+        let mut statement = self
+            .db
+            .prepare(
+                "SELECT id,title,provider,model,page_url,page_title,created_at,updated_at,
+             (SELECT COUNT(*) FROM messages m WHERE m.conversation_id=c.id)
+             FROM conversations c ORDER BY updated_at DESC LIMIT ?",
+            )
+            .map_err(db_error)?;
+        let rows = statement.query_map([limit], |row| Ok(json!({
+            "id": row.get::<_, String>(0)?, "title": row.get::<_, String>(1)?,
+            "provider": row.get::<_, String>(2)?, "model": row.get::<_, String>(3)?,
+            "pageUrl": row.get::<_, Option<String>>(4)?, "pageTitle": row.get::<_, Option<String>>(5)?,
+            "createdAt": row.get::<_, i64>(6)?, "updatedAt": row.get::<_, i64>(7)?,
+            "messageCount": row.get::<_, i64>(8)?,
+        }))).map_err(db_error)?;
+        let items = rows.collect::<Result<Vec<_>, _>>().map_err(db_error)?;
+        Ok(json!({ "items": items }))
+    }
+
+    fn get_conversation(&self, value: &Value) -> BridgeResult<Value> {
+        let id = required_string(value, "id", 100)?;
+        let conversation: Option<Value> = self.db.query_row(
+            "SELECT id,title,provider,model,page_url,page_title,created_at,updated_at FROM conversations WHERE id=?",
+            [&id], |row| Ok(json!({
+                "id": row.get::<_, String>(0)?, "title": row.get::<_, String>(1)?,
+                "provider": row.get::<_, String>(2)?, "model": row.get::<_, String>(3)?,
+                "pageUrl": row.get::<_, Option<String>>(4)?, "pageTitle": row.get::<_, Option<String>>(5)?,
+                "createdAt": row.get::<_, i64>(6)?, "updatedAt": row.get::<_, i64>(7)?,
+            }))
+        ).optional().map_err(db_error)?;
+        let mut conversation =
+            conversation.ok_or_else(|| BridgeError::new("CONVERSATION_NOT_FOUND"))?;
+        let mut statement = self.db.prepare(
+            "SELECT id,role,content,status,created_at FROM messages WHERE conversation_id=? ORDER BY created_at,id"
+        ).map_err(db_error)?;
+        let messages = statement
+            .query_map([&id], |row| {
+                Ok(json!({
+                    "id": row.get::<_, String>(0)?, "role": row.get::<_, String>(1)?,
+                    "content": row.get::<_, String>(2)?, "status": row.get::<_, String>(3)?,
+                    "createdAt": row.get::<_, i64>(4)?,
+                }))
+            })
+            .map_err(db_error)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(db_error)?;
+        conversation["messages"] = json!(messages);
+        Ok(conversation)
+    }
+
+    fn append_message(&mut self, value: &Value) -> BridgeResult<Value> {
+        let conversation_id = required_string(value, "conversationId", 100)?;
+        let role = required_string(value, "role", 20)?;
+        if !matches!(role.as_str(), "user" | "assistant" | "system") {
+            return Err(BridgeError::new("MESSAGE_ROLE_INVALID"));
+        }
+        let content = required_string(value, "content", 900_000)?;
+        let status = optional_string(value, "status", 30).unwrap_or_else(|| "completed".into());
+        let exists: bool = self
+            .db
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM conversations WHERE id=?)",
+                [&conversation_id],
+                |row| row.get(0),
+            )
+            .map_err(db_error)?;
+        if !exists {
+            return Err(BridgeError::new("CONVERSATION_NOT_FOUND"));
+        }
+        let id = Uuid::new_v4().to_string();
+        let now = now_millis();
+        let tx = self.db.transaction().map_err(db_error)?;
+        tx.execute(
+            "INSERT INTO messages (id,conversation_id,role,content,status,created_at) VALUES (?,?,?,?,?,?)",
+            params![id, conversation_id, role, content, status, now],
+        ).map_err(db_error)?;
+        tx.execute(
+            "UPDATE conversations SET updated_at=? WHERE id=?",
+            params![now, conversation_id],
+        )
+        .map_err(db_error)?;
+        tx.commit().map_err(db_error)?;
+        Ok(json!({ "id": id, "createdAt": now }))
+    }
+
+    fn delete_conversation(&self, value: &Value) -> BridgeResult<Value> {
+        let id = required_string(value, "id", 100)?;
+        let changed = self
+            .db
+            .execute("DELETE FROM conversations WHERE id=?", [&id])
+            .map_err(db_error)?;
+        Ok(json!({ "deleted": changed > 0 }))
+    }
+
+    fn storage_stats(&self) -> BridgeResult<Value> {
+        self.db
+            .query_row(
+                "SELECT (SELECT COUNT(*) FROM conversations), (SELECT COUNT(*) FROM messages),
+             (SELECT COALESCE(SUM(LENGTH(CAST(content AS BLOB))),0) FROM messages)",
+                [],
+                |row| {
+                    Ok(json!({
+                        "conversations": row.get::<_, i64>(0)?, "messages": row.get::<_, i64>(1)?,
+                        "contentBytes": row.get::<_, i64>(2)?,
+                    }))
+                },
+            )
+            .map_err(db_error)
+    }
+}
+
+fn open_database() -> BridgeResult<Connection> {
+    let dirs = ProjectDirs::from("ai", "WebAgentMate", "WebAgentMate")
+        .ok_or_else(|| BridgeError::new("DATA_DIRECTORY_UNAVAILABLE"))?;
+    let dir = dirs.data_local_dir();
+    fs::create_dir_all(dir).map_err(io_error)?;
+    set_private_directory_permissions(dir)?;
+    let path = dir.join("webagentmate.sqlite");
+    let connection = Connection::open(&path).map_err(db_error)?;
+    connection
+        .pragma_update(None, "journal_mode", "WAL")
+        .map_err(db_error)?;
+    connection
+        .pragma_update(None, "foreign_keys", "ON")
+        .map_err(db_error)?;
+    connection
+        .busy_timeout(Duration::from_secs(5))
+        .map_err(db_error)?;
+    connection.execute_batch(
+        "CREATE TABLE IF NOT EXISTS conversations (
+           id TEXT PRIMARY KEY, title TEXT NOT NULL, provider TEXT NOT NULL, model TEXT NOT NULL,
+           page_url TEXT, page_title TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+         );
+         CREATE TABLE IF NOT EXISTS messages (
+           id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+           role TEXT NOT NULL CHECK(role IN ('user','assistant','system')), content TEXT NOT NULL,
+           status TEXT NOT NULL DEFAULT 'completed', created_at INTEGER NOT NULL
+         );
+         CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at DESC);
+         CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id,created_at);
+         PRAGMA user_version=1;"
+    ).map_err(db_error)?;
+    set_private_file_permissions(&path)?;
+    Ok(connection)
+}
+
+fn required_string(value: &Value, key: &'static str, max: usize) -> BridgeResult<String> {
+    let text = value
+        .get(key)
+        .and_then(Value::as_str)
+        .ok_or_else(|| BridgeError::detail("FIELD_REQUIRED", key))?;
+    if text.is_empty() || text.len() > max {
+        return Err(BridgeError::detail("FIELD_INVALID", key));
+    }
+    Ok(text.to_owned())
+}
+
+fn optional_string(value: &Value, key: &str, max: usize) -> Option<String> {
+    value
+        .get(key)
+        .and_then(Value::as_str)
+        .filter(|text| !text.is_empty() && text.len() <= max)
+        .map(str::to_owned)
+}
+
+fn now_millis() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as i64
+}
+
+fn db_error(error: rusqlite::Error) -> BridgeError {
+    BridgeError::detail("DATABASE_ERROR", safe_detail(error))
+}
+
+fn io_error(error: io::Error) -> BridgeError {
+    BridgeError::detail("FILESYSTEM_ERROR", safe_detail(error))
+}
+
+fn safe_detail(error: impl std::fmt::Display) -> String {
+    error.to_string().chars().take(300).collect()
+}
+
+#[cfg(unix)]
+fn set_private_directory_permissions(path: &std::path::Path) -> BridgeResult<()> {
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(path, fs::Permissions::from_mode(0o700)).map_err(io_error)
+}
+
+#[cfg(not(unix))]
+fn set_private_directory_permissions(_: &std::path::Path) -> BridgeResult<()> {
+    Ok(())
+}
+
+#[cfg(unix)]
+fn set_private_file_permissions(path: &std::path::Path) -> BridgeResult<()> {
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(path, fs::Permissions::from_mode(0o600)).map_err(io_error)
+}
+
+#[cfg(not(unix))]
+fn set_private_file_permissions(_: &std::path::Path) -> BridgeResult<()> {
+    Ok(())
+}
+
+fn read_request(reader: &mut impl Read) -> BridgeResult<Option<Request>> {
+    let mut header = [0u8; 4];
+    match reader.read_exact(&mut header) {
+        Ok(()) => {}
+        Err(error) if error.kind() == io::ErrorKind::UnexpectedEof => return Ok(None),
+        Err(error) => return Err(io_error(error)),
+    }
+    let length = u32::from_le_bytes(header) as usize;
+    if length == 0 || length > MAX_MESSAGE_BYTES {
+        return Err(BridgeError::new("MESSAGE_TOO_LARGE"));
+    }
+    let mut body = vec![0; length];
+    reader.read_exact(&mut body).map_err(io_error)?;
+    serde_json::from_slice(&body)
+        .map(Some)
+        .map_err(|e| BridgeError::detail("MESSAGE_INVALID", safe_detail(e)))
+}
+
+fn write_response(writer: &mut impl Write, response: &Response) -> BridgeResult<()> {
+    let data = serde_json::to_vec(response)
+        .map_err(|e| BridgeError::detail("MESSAGE_SERIALIZE_FAILED", safe_detail(e)))?;
+    if data.len() > MAX_MESSAGE_BYTES {
+        return Err(BridgeError::new("RESPONSE_TOO_LARGE"));
+    }
+    writer
+        .write_all(&(data.len() as u32).to_le_bytes())
+        .map_err(io_error)?;
+    writer.write_all(&data).map_err(io_error)?;
+    writer.flush().map_err(io_error)
+}
+
+fn main() {
+    let origin = std::env::args().nth(1).unwrap_or_default();
+    let mut bridge = match Bridge::new(origin) {
+        Ok(value) => value,
+        Err(error) => {
+            eprintln!("WebAgentMate Bridge startup error: {}", error.code);
+            return;
+        }
+    };
+    let stdin = io::stdin();
+    let stdout = io::stdout();
+    let mut reader = stdin.lock();
+    let mut writer = stdout.lock();
+    loop {
+        let request = match read_request(&mut reader) {
+            Ok(Some(value)) => value,
+            Ok(None) => break,
+            Err(error) => {
+                eprintln!("WebAgentMate Bridge protocol error: {}", error.code);
+                break;
+            }
+        };
+        let response = match bridge.handle(&request) {
+            Ok(result) => Response {
+                id: request.id,
+                ok: true,
+                result: Some(result),
+                error: None,
+            },
+            Err(error) => Response {
+                id: request.id,
+                ok: false,
+                result: None,
+                error: Some(ErrorBody {
+                    code: error.code,
+                    detail: error.detail,
+                }),
+            },
+        };
+        if let Err(error) = write_response(&mut writer, &response) {
+            eprintln!("WebAgentMate Bridge output error: {}", error.code);
+            break;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn reads_native_message_frame() {
+        let body = br#"{"id":"1","protocolVersion":1,"method":"bridge.hello","params":{}}"#;
+        let mut framed = (body.len() as u32).to_le_bytes().to_vec();
+        framed.extend_from_slice(body);
+        let request = read_request(&mut Cursor::new(framed)).unwrap().unwrap();
+        assert_eq!(request.id, "1");
+        assert_eq!(request.method, "bridge.hello");
+        assert_eq!(request.protocol_version, 1);
+    }
+
+    #[test]
+    fn rejects_oversized_native_message() {
+        let header = ((MAX_MESSAGE_BYTES + 1) as u32).to_le_bytes();
+        let error = read_request(&mut Cursor::new(header)).unwrap_err();
+        assert_eq!(error.code, "MESSAGE_TOO_LARGE");
+    }
+
+    #[test]
+    fn validates_required_strings() {
+        assert_eq!(
+            required_string(&json!({"id": "ok"}), "id", 10).unwrap(),
+            "ok"
+        );
+        assert_eq!(
+            required_string(&json!({}), "id", 10).unwrap_err().code,
+            "FIELD_REQUIRED"
+        );
+    }
+}

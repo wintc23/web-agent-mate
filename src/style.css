@@ -1,0 +1,35 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #17221d;
+  background: #f4f7f5;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: radial-gradient(circle at top right, #e0f3e8 0, transparent 42%), #f4f7f5; }
+.shell { max-width: 560px; min-height: 100vh; margin: 0 auto; padding: 24px 18px; }
+.app-header { margin-bottom: 18px; }
+.app-header h4, .connection-card h3 { margin: 0 !important; }
+.app-header .ant-select { width: 155px; }
+.brand-mark { display: block; flex: 0 0 auto; width: 44px; height: 44px; filter: drop-shadow(0 8px 12px rgba(20, 122, 76, .22)); }
+.connection-card, .chat-card { border-color: #dce5df; box-shadow: 0 12px 36px rgba(24, 50, 36, .08); }
+.connection-card { margin-top: 14px; }
+.quick-actions { margin-block: 12px; }
+.message-list { display: flex; flex-direction: column; gap: 10px; max-height: 360px; min-height: 110px; margin-bottom: 12px; overflow-y: auto; }
+.chat-message { max-width: 90%; padding: 10px 12px; border-radius: 12px; background: #edf3ef; }
+.chat-message.user { align-self: flex-end; color: white; background: #147a4c; }
+.chat-message .ant-typography { margin: 0; white-space: pre-wrap; }
+.chat-message.user .ant-typography { color: inherit; }
+.eyebrow { color: #718078 !important; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.status-copy { min-height: 44px; margin: 18px 0 !important; line-height: 1.55; }
+.connection-card .ant-alert { margin-bottom: 14px; }
+.actions { margin-top: 14px; }
+.privacy-note { margin-top: 14px; }
+.developer-card { margin-top: 14px; }
+.developer-card .ant-typography { max-width: 100%; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+
+@media (max-width: 380px) {
+  .shell { padding: 16px 12px; }
+  .app-header { align-items: flex-start !important; }
+  .app-header .ant-select { width: 128px; }
+}

@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: cd dist && zip -r ../webagentmate-extension.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: webagentmate-extension
+          path: webagentmate-extension.zip
+
+  bridge:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-13
+            artifact: webagentmate-bridge-macos-x64
+            target: x86_64-apple-darwin
+            binary: bridge/target/x86_64-apple-darwin/release/webagentmate-bridge
+            installer: scripts/install-native-host-macos.sh
+            uninstaller: scripts/uninstall-native-host-macos.sh
+          - os: macos-14
+            artifact: webagentmate-bridge-macos-arm64
+            target: aarch64-apple-darwin
+            binary: bridge/target/aarch64-apple-darwin/release/webagentmate-bridge
+            installer: scripts/install-native-host-macos.sh
+            uninstaller: scripts/uninstall-native-host-macos.sh
+          - os: windows-latest
+            artifact: webagentmate-bridge-windows-x64
+            target: x86_64-pc-windows-msvc
+            binary: bridge/target/x86_64-pc-windows-msvc/release/webagentmate-bridge.exe
+            installer: scripts/install-native-host-windows.ps1
+            uninstaller: scripts/uninstall-native-host-windows.ps1
+          - os: ubuntu-latest
+            artifact: webagentmate-bridge-linux-x64
+            target: x86_64-unknown-linux-gnu
+            binary: bridge/target/x86_64-unknown-linux-gnu/release/webagentmate-bridge
+            installer: scripts/install-native-host-linux.sh
+            uninstaller: scripts/uninstall-native-host-linux.sh
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+          targets: ${{ matrix.target }}
+      - run: cargo fmt --manifest-path bridge/Cargo.toml -- --check
+      - run: cargo test --manifest-path bridge/Cargo.toml --release --target ${{ matrix.target }}
+      - run: cargo build --manifest-path bridge/Cargo.toml --release --target ${{ matrix.target }}
+      - shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force package | Out-Null
+          Copy-Item '${{ matrix.binary }}' package/
+          Copy-Item '${{ matrix.installer }}' package/
+          Copy-Item '${{ matrix.uninstaller }}' package/
+          Copy-Item LICENSE package/
+          Compress-Archive -Path package/* -DestinationPath '${{ matrix.artifact }}.zip'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.zip
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [extension, bridge]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: artifacts/*.zip

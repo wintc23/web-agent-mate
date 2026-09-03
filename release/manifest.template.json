@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "version": "{{VERSION}}",
+  "publishedAt": "{{PUBLISHED_AT}}",
+  "extension": {
+    "chromeWebStoreId": "{{CHROME_EXTENSION_ID}}",
+    "nativeHost": "ai.webagentmate.bridge",
+    "protocolVersion": 1
+  },
+  "artifacts": {
+    "macos-x64": {
+      "file": "webagentmate-bridge-macos-x64.tar.gz",
+      "sha256": "{{MACOS_X64_SHA256}}"
+    },
+    "macos-arm64": {
+      "file": "webagentmate-bridge-macos-arm64.tar.gz",
+      "sha256": "{{MACOS_ARM64_SHA256}}"
+    },
+    "windows-x64": {
+      "file": "webagentmate-bridge-windows-x64.zip",
+      "sha256": "{{WINDOWS_X64_SHA256}}"
+    },
+    "linux-x64": {
+      "file": "webagentmate-bridge-linux-x64.tar.gz",
+      "sha256": "{{LINUX_X64_SHA256}}"
+    }
+  }
+}
