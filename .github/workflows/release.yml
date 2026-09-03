@@ -30,13 +30,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-13
+          - os: macos-15-intel
             artifact: webagentmate-bridge-macos-x64
             target: x86_64-apple-darwin
             binary: bridge/target/x86_64-apple-darwin/release/webagentmate-bridge
             installer: scripts/install-native-host-macos.sh
             uninstaller: scripts/uninstall-native-host-macos.sh
-          - os: macos-14
+          - os: macos-15
             artifact: webagentmate-bridge-macos-arm64
             target: aarch64-apple-darwin
             binary: bridge/target/aarch64-apple-darwin/release/webagentmate-bridge
