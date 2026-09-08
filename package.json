@@ -1,26 +1,47 @@
 {
   "name": "webagentmate",
   "private": true,
-  "version": "0.2.2",
+  "version": "0.6.0",
+  "description": "A Chrome side-panel assistant connecting web pages to local AI agents.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wintc23/web-agent-mate.git"
+  },
+  "homepage": "https://github.com/wintc23/web-agent-mate#readme",
+  "bugs": {
+    "url": "https://github.com/wintc23/web-agent-mate/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "npm run check:locales && tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
+    "build:runtime": "tsc --noEmit -p tsconfig.runtime.json && node scripts/build-runtime.cjs",
+    "test": "node scripts/test.cjs",
     "check:locales": "node scripts/check-locales.cjs"
   },
   "devDependencies": {
     "@types/chrome": "0.0.246",
-    "@types/node": "14.18.63",
+    "@types/node": "^22.20.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "typescript": "4.9.5",
-    "vite": "2.9.18"
+    "fake-indexeddb": "^6.2.5",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.3"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.263",
     "antd": "^5.27.3",
+    "esbuild": "^0.25.12",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "zod": "4.5.4"
   }
 }

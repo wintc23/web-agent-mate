@@ -26,6 +26,15 @@ fi
 
 mkdir -p "$binary_dir"
 install -m 755 "$source_binary" "$binary_dir/webagentmate-bridge"
+runtime_source="$project_dir/bridge/runtime-dist/agent.mjs"
+if [[ -f "$script_dir/runtime/agent.mjs" ]]; then runtime_source="$script_dir/runtime/agent.mjs"; fi
+if [[ ! -f "$runtime_source" ]]; then
+  echo "Runtime bundle missing. Run npm run build:runtime before installing." >&2
+  exit 1
+fi
+mkdir -p "$binary_dir/runtime"
+install -m 644 "$runtime_source" "$binary_dir/runtime/agent.mjs"
+if [[ -d "$(dirname "$runtime_source")/licenses" ]]; then cp -R "$(dirname "$runtime_source")/licenses" "$binary_dir/runtime/"; fi
 
 manifest_json="$(printf '{\n  "name": "ai.webagentmate.bridge",\n  "description": "WebAgentMate native bridge",\n  "path": "%s",\n  "type": "stdio",\n  "allowed_origins": ["chrome-extension://%s/"]\n}\n' "$binary_dir/webagentmate-bridge" "$extension_id")"
 

@@ -1,0 +1,123 @@
+import type { SupportedLanguage } from "./locales";
+import type { ProviderIssueKind } from "./agent/provider-error";
+
+const reasons: Record<SupportedLanguage, Record<ProviderIssueKind, string>> = {
+  zh_CN: {
+    freeLimit: "免费档拒绝了本次请求，但现有响应不足以区分请求频率限制与单次输入限制。请查看免费档限制，或选择其他模型。",
+    rate: "OrcaRouter 工作空间的请求频率已达到限制，同一工作空间的 API Key 共用额度。请等待后重试，或切换到其他智能体。",
+    freePrompt: "本次输入超过免费档的单次请求限制，输入包括会话历史和工具定义。等待后原样重试无效；请新建较短会话或切换模型。",
+    freeCapacity: "免费路由当前没有可承接本次请求的免费模型。可查看免费档限制或自行选择其他模型。",
+    freeQuota: "OrcaRouter 返回免费用量已耗尽。请查看账户额度，或自行选择其他模型；服务商没有提供恢复时间。",
+    balance: "OrcaRouter 工作空间余额不足，无法完成本次请求。请查看账单和余额，或切换到其他智能体。",
+    keyQuota: "当前 API Key 自身的额度上限已用尽，账户余额可能仍然充足。请到 OrcaRouter 控制台调整这个 Key 的额度。",
+    budget: "当前成员或智能体已达到月度预算上限。请到 OrcaRouter 控制台调整对应预算。",
+    cycle: "当前 API Key 已达到周期消费上限。请等待周期重置，或到控制台调整该 Key 的限额；充值余额不会解除这个限制。",
+    access: "当前 API Key 无权访问这个模型，或受到访问策略限制。请检查允许的模型和访问规则，或切换模型。",
+    auth: "OrcaRouter 拒绝了当前 API Key。请检查连接，重新登录或更换有效密钥。",
+    model: "当前模型暂未开放或不可用。请选择其他模型后继续。",
+    unavailable: "OrcaRouter 或模型服务暂时不可用。可以稍后重试，或切换模型。",
+    request: "当前模型拒绝了请求参数或输入格式。请调整任务或切换模型后继续。",
+    policy: "请求被 OrcaRouter 的安全或工具访问策略阻止。请查看控制台中的相关策略，并调整任务；原样重试通常无效。",
+    byok: "OrcaRouter 无法使用工作空间自带的模型密钥，且不允许平台回退。请在控制台修复该密钥或配置。"
+  },
+  en: {
+    freeLimit: "The free tier rejected this request, but the available response cannot distinguish a rate limit from an input-size limit. Review the free-tier limits or choose another model.",
+    rate: "The OrcaRouter workspace request rate is limited. Keys in the same workspace share this limit. Wait before retrying, or choose another agent.",
+    freePrompt: "This request exceeds the free tier's input limit, including history and tool definitions. Waiting will not help. Start a shorter conversation or choose another model.",
+    freeCapacity: "The free router has no free model available for this request. Review free-tier limits or choose another model.",
+    freeQuota: "OrcaRouter reported that free usage is exhausted. Check your account allowance or choose another model. No reset time was provided.",
+    balance: "The OrcaRouter workspace balance is insufficient. Check billing and balance, or choose another agent.",
+    keyQuota: "This API key has reached its own quota. The workspace may still have credit. Adjust the key's quota in the OrcaRouter console.",
+    budget: "This member or agent reached its monthly budget. Adjust that budget in the OrcaRouter console.",
+    cycle: "This API key reached its recurring spending limit. Wait for the reset or adjust the key's limit. Adding wallet credit will not remove this limit.",
+    access: "This API key cannot access the model, or an access rule blocked the request. Check allowed models and access rules, or choose another model.",
+    auth: "OrcaRouter rejected this API key. Check the connection, sign in again, or provide a valid key.",
+    model: "This model is not available yet or is currently unavailable. Choose another model to continue.",
+    unavailable: "OrcaRouter or the model service is temporarily unavailable. Retry later or choose another model.",
+    request: "The model rejected the request parameters or input format. Adjust the task or choose another model.",
+    policy: "An OrcaRouter safety or tool-access policy blocked this request. Check the console policy and adjust the task; repeating it unchanged may fail again.",
+    byok: "OrcaRouter cannot use the workspace's own model key, and platform fallback is disabled. Repair the key or configuration in the console."
+  },
+  zh_TW: {
+    freeLimit: "免費方案拒絕了本次請求，但現有回應不足以區分頻率與單次輸入限制。請查看免費限制或選擇其他模型。",
+    rate: "OrcaRouter 工作區的請求頻率已達上限，同一工作區的 API Key 共用此限制。請等待後重試，或切換智慧體。",
+    freePrompt: "本次輸入（包括會話歷史與工具定義）超過免費方案的單次限制。等待無效；請建立較短會話或切換模型。",
+    freeCapacity: "免費路由目前沒有可處理本次請求的免費模型。請查看免費限制或選擇其他模型。",
+    freeQuota: "OrcaRouter 回報免費用量已耗盡。請查看帳戶額度或選擇其他模型；未提供恢復時間。",
+    balance: "OrcaRouter 工作區餘額不足。請查看帳單與餘額，或切換智慧體。",
+    keyQuota: "此 API Key 自身的額度已用盡，工作區可能仍有餘額。請到控制台調整該 Key 的額度。",
+    budget: "此成員或智慧體已達每月預算上限。請到控制台調整對應預算。",
+    cycle: "此 API Key 已達週期消費上限。請等待重設或調整該 Key 的限額；儲值不會解除此限制。",
+    access: "此 API Key 無權存取模型，或受到存取規則限制。請檢查允許的模型與規則，或切換模型。",
+    auth: "OrcaRouter 拒絕了此 API Key。請檢查連線、重新登入或更換有效金鑰。",
+    model: "此模型尚未開放或暫時無法使用。請選擇其他模型。",
+    unavailable: "OrcaRouter 或模型服務暫時無法使用。請稍後重試或切換模型。",
+    request: "模型拒絕了請求參數或輸入格式。請調整任務或切換模型。",
+    policy: "請求被安全或工具存取策略阻止。請檢查控制台策略並調整任務；原樣重試通常無效。",
+    byok: "OrcaRouter 無法使用工作區自備模型金鑰，且平台備援已停用。請在控制台修復金鑰或設定。"
+  },
+  ja: {
+    freeLimit: "無料枠で拒否されましたが、頻度と入力サイズのどちらの制限か判断できる情報がありません。制限を確認するか、モデルを変更してください。",
+    rate: "OrcaRouter ワークスペースのリクエスト頻度が上限に達しました。キー間で上限を共有しています。待って再試行するか、別のエージェントを選んでください。",
+    freePrompt: "履歴とツール定義を含む入力が無料枠の1回の上限を超えました。待機では解決しません。短い会話を作成するか、モデルを変更してください。",
+    freeCapacity: "このリクエストを処理できる無料モデルがありません。無料枠の制限を確認するか、モデルを変更してください。",
+    freeQuota: "OrcaRouter が無料枠の使い切りを報告しました。アカウントの枠を確認するか、モデルを変更してください。回復時刻は不明です。",
+    balance: "OrcaRouter ワークスペースの残高が不足しています。請求と残高を確認するか、エージェントを変更してください。",
+    keyQuota: "この API キー自体の使用枠に達しました。残高とは別の制限です。コンソールでキーの枠を調整してください。",
+    budget: "このメンバーまたはエージェントの月額予算に達しました。コンソールで予算を調整してください。",
+    cycle: "API キーの定期支出上限に達しました。リセットを待つか、上限を調整してください。残高の追加では解除されません。",
+    access: "キーがモデルにアクセスできないか、アクセス規則で拒否されました。設定を確認するか、モデルを変更してください。",
+    auth: "OrcaRouter が API キーを拒否しました。接続を確認し、再ログインするか、有効なキーを設定してください。",
+    model: "モデルが未公開または利用不可です。別のモデルを選んでください。",
+    unavailable: "OrcaRouter またはモデルサービスが一時的に利用できません。後で再試行するか、モデルを変更してください。",
+    request: "モデルがパラメーターまたは入力形式を拒否しました。タスクやモデルを調整してください。",
+    policy: "安全またはツール利用ポリシーで拒否されました。コンソールの設定とタスクを見直してください。同じ再試行では解決しない場合があります。",
+    byok: "ワークスペース独自のモデルキーが利用できず、代替経路も無効です。コンソールでキーや設定を修正してください。"
+  },
+  de: {
+    freeLimit: "Die kostenlose Stufe hat die Anfrage abgelehnt. Die Antwort unterscheidet Frequenz- und Eingabegrenzen nicht. Prüfen Sie die Grenzen oder wechseln Sie das Modell.",
+    rate: "Das Anfragelimit des OrcaRouter-Workspace ist erreicht. Alle Schlüssel teilen es. Warten Sie vor dem Wiederholen oder wählen Sie einen anderen Agenten.",
+    freePrompt: "Eingabe, Verlauf und Tool-Definitionen überschreiten das kostenlose Eingabelimit. Warten hilft nicht. Starten Sie eine kürzere Unterhaltung oder wechseln Sie das Modell.",
+    freeCapacity: "Für diese Anfrage ist kein kostenloses Modell verfügbar. Prüfen Sie die Grenzen oder wählen Sie ein anderes Modell.",
+    freeQuota: "OrcaRouter meldet ausgeschöpftes Freikontingent ohne Rücksetzzeit. Prüfen Sie das Konto oder wählen Sie ein anderes Modell.",
+    balance: "Das Workspace-Guthaben reicht nicht aus. Prüfen Sie Abrechnung und Guthaben oder wechseln Sie den Agenten.",
+    keyQuota: "Das eigene Kontingent dieses API-Schlüssels ist erreicht. Das Workspace-Guthaben kann noch ausreichen. Passen Sie das Schlüssellimit an.",
+    budget: "Das Monatsbudget dieses Mitglieds oder Agenten ist erreicht. Passen Sie das Budget in der Konsole an.",
+    cycle: "Das periodische Ausgabenlimit des Schlüssels ist erreicht. Warten Sie auf das Zurücksetzen oder passen Sie das Limit an. Aufladen hilft hier nicht.",
+    access: "Der Schlüssel darf dieses Modell nicht nutzen oder eine Zugriffsregel blockiert die Anfrage. Prüfen Sie Regeln und erlaubte Modelle.",
+    auth: "OrcaRouter hat den API-Schlüssel abgelehnt. Prüfen Sie die Verbindung und melden Sie sich neu an oder ersetzen Sie den Schlüssel.",
+    model: "Dieses Modell ist noch nicht oder derzeit nicht verfügbar. Wählen Sie ein anderes Modell.",
+    unavailable: "OrcaRouter oder der Modelldienst ist vorübergehend nicht verfügbar. Versuchen Sie es später oder wechseln Sie das Modell.",
+    request: "Das Modell hat Parameter oder Eingabeformat abgelehnt. Passen Sie Aufgabe oder Modell an.",
+    policy: "Eine Sicherheits- oder Tool-Zugriffsregel blockiert die Anfrage. Prüfen Sie die Konsole und passen Sie die Aufgabe an; unveränderte Wiederholungen können erneut scheitern.",
+    byok: "Der eigene Modellschlüssel des Workspace ist unbrauchbar und ein Plattformersatz ist deaktiviert. Korrigieren Sie Schlüssel oder Konfiguration."
+  },
+  pt_BR: {
+    freeLimit: "A camada gratuita rejeitou a solicitação, mas a resposta não distingue limite de frequência e tamanho. Confira os limites ou troque o modelo.",
+    rate: "O limite de frequência do workspace OrcaRouter foi atingido. As chaves compartilham esse limite. Aguarde ou escolha outro agente.",
+    freePrompt: "A entrada, incluindo histórico e definições de ferramentas, excede o limite gratuito por solicitação. Esperar não resolve. Inicie uma conversa menor ou troque o modelo.",
+    freeCapacity: "Não há modelo gratuito disponível para esta solicitação. Confira os limites ou escolha outro modelo.",
+    freeQuota: "OrcaRouter informou que a cota gratuita acabou, sem horário de recuperação. Confira a conta ou escolha outro modelo.",
+    balance: "O saldo do workspace OrcaRouter é insuficiente. Confira cobrança e saldo ou escolha outro agente.",
+    keyQuota: "A cota desta chave API acabou. O workspace ainda pode ter saldo. Ajuste a cota da chave no console.",
+    budget: "O orçamento mensal deste membro ou agente foi atingido. Ajuste o orçamento no console.",
+    cycle: "A chave API atingiu o limite periódico de gastos. Aguarde a renovação ou ajuste o limite. Adicionar saldo não remove esse limite.",
+    access: "A chave não pode acessar o modelo ou uma regra bloqueou a solicitação. Confira modelos permitidos e regras de acesso.",
+    auth: "OrcaRouter rejeitou a chave API. Confira a conexão, entre novamente ou use uma chave válida.",
+    model: "O modelo ainda não foi liberado ou está indisponível. Escolha outro modelo.",
+    unavailable: "OrcaRouter ou o serviço do modelo está temporariamente indisponível. Tente depois ou troque o modelo.",
+    request: "O modelo rejeitou os parâmetros ou o formato da entrada. Ajuste a tarefa ou troque o modelo.",
+    policy: "Uma política de segurança ou acesso a ferramentas bloqueou a solicitação. Confira o console e ajuste a tarefa; repetir sem alterações pode falhar novamente.",
+    byok: "A chave de modelo própria do workspace está indisponível e o uso da plataforma como alternativa está desativado. Corrija a chave ou configuração."
+  }
+};
+const controls = {
+  en: { title: "OrcaRouter request paused", saved: "Conversation and completed actions are saved. Paid models are never selected automatically.", retry: "Retry / continue", model: "Change model / agent", account: "Manage quota", billing: "View billing", limits: "Free-tier limits", connection: "Check connection", shorter: "New shorter conversation", wait: "Retry in {seconds}s", reset: "Retry after: {time}", unknown: "The provider did not supply a recovery time." },
+  zh_CN: { title: "OrcaRouter 请求已暂停", saved: "会话与已完成的操作已保存，不会自动切换到付费模型。", retry: "重试 / 继续", model: "切换模型 / Agent", account: "管理额度", billing: "查看账单与余额", limits: "查看免费档限制", connection: "检查连接", shorter: "新建较短会话", wait: "{seconds} 秒后可重试", reset: "可重试时间：{time}", unknown: "服务商未提供恢复时间。" },
+  zh_TW: { title: "OrcaRouter 請求已暫停", saved: "會話與已完成的操作已儲存，不會自動切換至付費模型。", retry: "重試 / 繼續", model: "切換模型 / Agent", account: "管理額度", billing: "查看帳單與餘額", limits: "查看免費限制", connection: "檢查連線", shorter: "建立較短會話", wait: "{seconds} 秒後可重試", reset: "可重試時間：{time}", unknown: "服務商未提供恢復時間。" },
+  ja: { title: "OrcaRouter リクエストを一時停止", saved: "会話と完了した操作は保存済みです。有料モデルへ自動変更しません。", retry: "再試行 / 続行", model: "モデル / エージェント変更", account: "使用枠を管理", billing: "請求と残高", limits: "無料枠の制限", connection: "接続を確認", shorter: "短い新規会話", wait: "{seconds}秒後に再試行", reset: "再試行可能時刻：{time}", unknown: "サービスから回復時刻は提供されていません。" },
+  de: { title: "OrcaRouter-Anfrage pausiert", saved: "Unterhaltung und abgeschlossene Aktionen sind gespeichert. Kein automatischer Wechsel zu kostenpflichtigen Modellen.", retry: "Wiederholen / Fortsetzen", model: "Modell / Agent wechseln", account: "Kontingent verwalten", billing: "Abrechnung und Guthaben", limits: "Kostenlose Limits", connection: "Verbindung prüfen", shorter: "Neue kürzere Unterhaltung", wait: "In {seconds}s wiederholen", reset: "Wiederholen ab: {time}", unknown: "Der Anbieter hat keine Rücksetzzeit angegeben." },
+  pt_BR: { title: "Solicitação OrcaRouter pausada", saved: "Conversa e ações concluídas foram salvas. Modelos pagos não são selecionados automaticamente.", retry: "Tentar / continuar", model: "Trocar modelo / agente", account: "Gerenciar cota", billing: "Cobrança e saldo", limits: "Limites gratuitos", connection: "Conferir conexão", shorter: "Nova conversa menor", wait: "Tentar em {seconds}s", reset: "Tentar após: {time}", unknown: "O provedor não informou quando o acesso será restabelecido." }
+};
+export function providerReason(language: SupportedLanguage, kind: ProviderIssueKind): string { return reasons[language][kind]; }
+export function providerControl(language: SupportedLanguage, key: keyof typeof controls.en): string { return controls[language][key]; }

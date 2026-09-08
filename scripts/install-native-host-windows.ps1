@@ -17,6 +17,8 @@ $ManifestPath = Join-Path $InstallRoot 'ai.webagentmate.bridge.json'
 if (-not (Test-Path $SourceBinary)) {
   $Manifest = Join-Path $ProjectDir 'bridge\Cargo.toml'
   if (Test-Path $Manifest) {
+    Push-Location $ProjectDir
+    try { npm run build:runtime; if ($LASTEXITCODE -ne 0) { throw 'Runtime build failed' } } finally { Pop-Location }
     cargo build --manifest-path $Manifest --release
   } else {
     throw 'Bridge binary is missing. Download the Windows release package.'
@@ -25,6 +27,14 @@ if (-not (Test-Path $SourceBinary)) {
 
 New-Item -ItemType Directory -Force -Path $BinaryDir | Out-Null
 Copy-Item -Force $SourceBinary $BinaryPath
+$RuntimeSource = Join-Path $ProjectDir 'bridge\runtime-dist\agent.mjs'
+if (Test-Path (Join-Path $PSScriptRoot 'runtime\agent.mjs')) { $RuntimeSource = Join-Path $PSScriptRoot 'runtime\agent.mjs' }
+if (-not (Test-Path $RuntimeSource)) { throw 'Runtime bundle missing. Run npm run build:runtime first.' }
+$RuntimeDir = Join-Path $BinaryDir 'runtime'
+New-Item -ItemType Directory -Force -Path $RuntimeDir | Out-Null
+Copy-Item -Force $RuntimeSource (Join-Path $RuntimeDir 'agent.mjs')
+$RuntimeLicenses = Join-Path (Split-Path $RuntimeSource -Parent) 'licenses'
+if (Test-Path $RuntimeLicenses) { Copy-Item $RuntimeLicenses $RuntimeDir -Recurse -Force }
 
 $Manifest = @{
   name = 'ai.webagentmate.bridge'

@@ -1,6 +1,7 @@
 # macOS packaging
 
-Package the two Rust binaries as a universal app or as separate x64 and arm64
-archives. The official package writes an exact `allowed_origins` entry using
-the Chrome Web Store ID. Signing and notarization are optional for development
-and expected for general-audience distribution.
+The release workflow builds separate x64 and ARM64 ZIPs containing the Bridge,
+Node runtime, license notices, and installer/uninstaller scripts. The installer
+registers the exact extension origin for Chrome in the current user's Library.
+Node.js 20+ is installed separately. The workflow does not currently sign or
+notarize the binaries.

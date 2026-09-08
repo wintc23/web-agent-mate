@@ -1,31 +1,17 @@
-# WebAgentMate release workspace
+# WebAgentMate release packaging
 
-This directory contains versioned release configuration and packaging sources.
-Generated binaries and installers belong in `release/artifacts/` and are ignored
-by Git. CI uploads those files to GitHub Releases.
-
-## Distribution modes
-
-- Official store build: package the fixed Chrome Web Store extension ID in the
-  Native Messaging manifest. Users install and connect without pairing.
-- Open-source/development build: obtain `chrome.runtime.id` from the extension
-  and pass it through the explicit Bridge pairing flow. The Bridge must show a
-  confirmation before adding the origin.
-
-Never ship a Native Messaging manifest with a wildcard origin. The host must
-only permit exact `chrome-extension://<32-character-id>/` origins.
-
-## Artifact layout
+The source of truth for published archives is [`.github/workflows/release.yml`](../.github/workflows/release.yml). A `v*` tag builds the extension and four Bridge packages, then uploads them to GitHub Releases. A manual workflow run builds downloadable Actions artifacts without publishing a release.
 
 ```text
-release/artifacts/
-├── webagentmate-bridge-macos-x64.tar.gz
-├── webagentmate-bridge-macos-arm64.tar.gz
-├── webagentmate-bridge-windows-x64.zip
-├── webagentmate-bridge-linux-x64.tar.gz
-└── checksums-sha256.txt
+webagentmate-extension.zip
+webagentmate-bridge-macos-x64.zip
+webagentmate-bridge-macos-arm64.zip
+webagentmate-bridge-windows-x64.zip
+webagentmate-bridge-linux-x64.zip
 ```
 
-The release manifest is generated from `manifest.template.json`. Replace every
-placeholder in CI, calculate SHA-256 after packaging, and upload the manifest
-and artifacts together.
+Each v0.6 Bridge ZIP contains the native binary, the platform's installation and uninstallation scripts, `runtime/agent.mjs`, runtime dependency license notices, and the project's `LICENSE`. Users must extract the entire package and install Node.js 20+ separately. Unix ZIP extraction may require restoring executable permissions; see the [installation guide](../README.md#install-bridge).
+
+The checked-in extension public key fixes the default ID at `lmlkkallnnjijicmfmfdelnamcnhflfg`. Installers register that exact origin by default. Forks using a different key must pass their extension ID explicitly to the installer (`-ExtensionId` in PowerShell). The installer accepts one exact ID; there is no interactive pairing flow or wildcard origin.
+
+Generated local packages belong in the ignored `release/artifacts/` directory. `manifest.template.json` is reserved for future distribution metadata; the current GitHub workflow does not generate a release manifest, checksums, signed installers, or an auto-update feed.

@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "moduleResolution": "bundler" },
+  "include": ["bridge/runtime", "src/agent"]
+}

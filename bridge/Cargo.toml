@@ -1,8 +1,10 @@
 [package]
 name = "webagentmate-bridge"
-version = "0.2.2"
+version = "0.6.0"
 edition = "2021"
-license = "Proprietary"
+license = "MIT"
+description = "Native Messaging bridge and local agent runtime host for WebAgentMate"
+repository = "https://github.com/wintc23/web-agent-mate"
 
 [dependencies]
 directories = "6"
