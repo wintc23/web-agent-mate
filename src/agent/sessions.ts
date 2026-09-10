@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG, assertConfig, localConfig, repairHistory, type AgentConfig, type AgentEvent, type Session, type WireMessage } from "./protocol";
+import { DEFAULT_CONFIG, assertConfig, configTransition, repairHistory, type AgentConfig, type AgentEvent, type Session, type WireMessage } from "./protocol";
 
 const DB_NAME = "webagentmate-sessions-v1";
 const changes = new Set<() => void>();
@@ -10,7 +10,7 @@ function notifyChanges() {
 export const LEASE_MS = 45_000;
 export function makeSession(config: AgentConfig = DEFAULT_CONFIG): Session {
   const now = Date.now();
-  return { id: crypto.randomUUID(), title: "", createdAt: now, updatedAt: now, config: { ...localConfig(config) }, entries: [], history: [], draft: "" };
+  return { id: crypto.randomUUID(), title: "", createdAt: now, updatedAt: now, revision: 0, config: { ...config }, entries: [], history: [], draft: "" };
 }
 export function applyEvent(session: Session, event: AgentEvent): void {
   if (event.type === "phase") { if (session.activeRun) session.activeRun.phase = event.phase; return; }
@@ -55,6 +55,21 @@ export function matchesSession(session: Session, query: string): boolean {
   return query.trim().toLocaleLowerCase().split(/\s+/).every(word => searchable.includes(word));
 }
 
+// IndexedDB returns fresh objects even when nothing changed. Reuse snapshots so
+// polling does not re-render the conversation or reset transient control state.
+export function reconcileSessions(previous: Session[], incoming: Session[]): Session[] {
+  const byId = new Map(previous.map(session => [session.id, session]));
+  const next = incoming.map(session => {
+    const existing = byId.get(session.id);
+    if (!existing) return session;
+    const unchanged = existing.revision !== undefined && session.revision !== undefined
+      ? existing.revision === session.revision
+      : JSON.stringify(existing) === JSON.stringify(session); // Legacy records gain a revision on their next write.
+    return unchanged ? existing : session;
+  });
+  return next.length === previous.length && next.every((session, index) => session === previous[index]) ? previous : next;
+}
+
 // Each mutation is a single IndexedDB read/write transaction. No read/modify/write
 // races between side panels, and a stale window cannot recreate a deleted session.
 export class SessionStore {
@@ -74,21 +89,8 @@ export class SessionStore {
       request.onsuccess = () => {
         const db = request.result;
         db.onversionchange = () => { db.close(); this.db = undefined; };
-        // Migrate in one transaction without replacing IDs, timestamps, queued
-        // messages or live ownership. Never start work as a side effect of loading.
-        const tx = db.transaction("sessions", "readwrite");
-        let migrated = false;
-        const cursor = tx.objectStore("sessions").openCursor();
-        cursor.onsuccess = () => {
-          const item = cursor.result;
-          if (!item) return;
-          const session = item.value as Session;
-          const config = localConfig(session.config);
-          if (config !== session.config) { session.config = config; item.update(session); migrated = true; }
-          item.continue();
-        };
-        tx.oncomplete = () => { resolve(db); if (migrated) notifyChanges(); };
-        tx.onabort = tx.onerror = () => { db.close(); this.db = undefined; reject(tx.error); };
+        // Loading preserves the selected environment and never starts work.
+        resolve(db);
       };
       request.onerror = () => reject(request.error);
     });
@@ -102,8 +104,7 @@ export class SessionStore {
     });
   }
   async create(config?: AgentConfig, seed?: Partial<Session>): Promise<Session> {
-    const session = { ...makeSession(config), ...seed };
-    session.config = localConfig(session.config);
+    const session = { ...makeSession(config), ...seed, revision: 0 };
     assertConfig(session.config);
     const db = await this.open();
     return new Promise((resolve, reject) => {
@@ -125,7 +126,7 @@ export class SessionStore {
   async fork(id: string, config?: AgentConfig): Promise<Session> {
     const source = await this.get(id);
     if (source.activeRun && (source.activeRun.coordinated || Date.now() - source.activeRun.heartbeat < LEASE_MS)) throw new Error("SESSION_BUSY");
-    const nextConfig = localConfig(config ?? source.config);
+    const nextConfig = configTransition(source.config, config ?? source.config);
     const sameEnvironment = source.config.engine === nextConfig.engine && source.config.location === nextConfig.location && source.config.workspace === nextConfig.workspace;
     const codexSource = source.config.engine === "codex" && nextConfig.engine === "codex" && nextConfig.location === "local" ? source.nativeSessionId ?? source.nativeForkFromId : undefined;
     const entries = structuredClone(source.entries).map(entry => ({ ...entry, status: entry.status === "running" ? "interrupted" as const : entry.status }));
@@ -147,9 +148,13 @@ export class SessionStore {
         try {
           if (!request.result || request.result.archived) throw new Error("SESSION_NOT_FOUND");
           result = request.result;
+          const revision = result.revision ?? 0;
+          const previousConfig = { ...result.config };
           mutate(result);
-          result.config = localConfig(result.config);
+          result.config = configTransition(previousConfig, result.config);
           if (touch) result.updatedAt = Date.now();
+          // Drafts, heartbeats and approvals also change state without touching updatedAt.
+          result.revision = revision + 1;
           store.put(result);
         } catch (error) { failure = error; tx.abort(); }
       };

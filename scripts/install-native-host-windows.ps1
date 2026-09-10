@@ -35,6 +35,8 @@ New-Item -ItemType Directory -Force -Path $RuntimeDir | Out-Null
 Copy-Item -Force $RuntimeSource (Join-Path $RuntimeDir 'agent.mjs')
 $RuntimeLicenses = Join-Path (Split-Path $RuntimeSource -Parent) 'licenses'
 if (Test-Path $RuntimeLicenses) { Copy-Item $RuntimeLicenses $RuntimeDir -Recurse -Force }
+$BundledNode = Join-Path (Split-Path $RuntimeSource -Parent) 'node'
+if (Test-Path $BundledNode) { Copy-Item $BundledNode $RuntimeDir -Recurse -Force }
 
 $Manifest = @{
   name = 'ai.webagentmate.bridge'

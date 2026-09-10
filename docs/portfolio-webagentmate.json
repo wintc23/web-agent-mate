@@ -1,0 +1,62 @@
+{
+  "name": "WebAgentMate",
+  "slug": "webagentmate",
+  "tagline": "让每个网页都能连接你的 AI 智能体",
+  "summary": "开源 Chrome 网页助手，在侧边栏或独立会话页中总结、翻译和处理网页任务。支持 OrcaRouter 内置智能体，并可通过连接助手使用本地 Codex、Claude Code、文件和命令。",
+  "platform": "Chrome 扩展",
+  "version": "0.6.0",
+  "status": "developing",
+  "status_label": "开发预览",
+  "logo_url": "https://file.wintc.top/products/webagentmate/icon-v060.png",
+  "cover_url": "https://file.wintc.top/products/webagentmate/models-zh-v060.png",
+  "accent_color": "#5156f5",
+  "highlights": ["网页问答与任务", "多模型与智能体", "本地会话", "可选文件与命令"],
+  "features": [],
+  "steps": [],
+  "screenshots": [],
+  "links": [
+    {"label": "查看源码与安装说明", "url": "https://github.com/wintc23/web-agent-mate", "primary": true, "analyticsKey": "github-source"},
+    {"label": "反馈与建议", "url": "https://github.com/wintc23/web-agent-mate/issues", "primary": false, "analyticsKey": "github-issues"}
+  ],
+  "story_html": "",
+  "sections": [
+    {
+      "type": "feature_grid", "title": "核心能力", "subtitle": "CAPABILITIES", "layout": "columns-2", "visible": true, "sort": 0,
+      "content": {"items": [
+        {"title": "围绕当前网页提问", "description": "总结文章、解释选中文本、翻译和提取信息，让对话贴近正在阅读的内容。"},
+        {"title": "用对话完成网页任务", "description": "按任务读取、导航、点击、填写和截图。默认询问工具授权，也可主动切换为自动授权，并随时停止任务。"},
+        {"title": "切换模型与智能体", "description": "通过 OrcaRouter 搜索和选择不同提供商的模型；可选连接助手支持本地 Codex 和 Claude Code。模型可用性、额度和费用由对应服务决定。"},
+        {"title": "连接本地工作", "description": "安装匹配版本的连接助手后，选择工作目录，使用文件读取、搜索、编辑和命令能力，把网页信息整理成文档。"},
+        {"title": "保留对话与工作进度", "description": "会话和草稿保存在当前设备，支持搜索、改名、独立分支与备份导出；侧边栏和独立会话页同步进度。"},
+        {"title": "按自己的习惯使用", "description": "支持六种界面语言，以及跟随系统、浅色和深色主题。内置网页任务无需额外桌面软件。"}
+      ]}
+    },
+    {
+      "type": "gallery", "title": "产品截图", "subtitle": "GALLERY", "layout": "carousel", "visible": true, "sort": 1,
+      "content": {"items": [
+        {"type": "image", "url": "https://file.wintc.top/products/webagentmate/models-zh-v060.png", "alt": "WebAgentMate 模型选择器中的 DeepSeek 模型列表", "caption": "按提供商选择模型，查看免费模型与价格信息", "poster": ""},
+        {"type": "image", "url": "https://file.wintc.top/products/webagentmate/workspace-zh-v060.png", "alt": "WebAgentMate 独立会话页中的网页总结任务草稿", "caption": "在独立会话页准备网页任务，并选择授权方式", "poster": ""},
+        {"type": "image", "url": "https://file.wintc.top/products/webagentmate/settings-zh-v060.png", "alt": "WebAgentMate 模型服务设置与 OrcaRouter 推广登录说明", "caption": "通过浏览器登录 OrcaRouter，连接前展示推广说明", "poster": ""}
+      ]}
+    },
+    {
+      "type": "steps", "title": "开始使用", "subtitle": "", "layout": "columns-3", "visible": true, "sort": 2,
+      "content": {"items": [
+        {"title": "安装当前开发版本", "description": "按 GitHub README 从源码构建，在 Chrome 扩展管理页加载生成的 dist 目录。Chrome 应用商店版本尚未在此页面提供。"},
+        {"title": "连接所选智能体", "description": "内置智能体在设置中通过浏览器登录 OrcaRouter；本地 Codex 或 Claude Code 需要各自登录及匹配版本的连接助手。"},
+        {"title": "描述网页任务", "description": "打开目标网页，从工具栏打开侧边栏，输入问题或任务。保持发起任务的侧栏或会话页打开，按提示确认操作。"}
+      ]}
+    },
+    {
+      "type": "rich_text", "title": "为什么做这个产品", "subtitle": "", "layout": "default", "visible": true, "sort": 3,
+      "content": {"html": "<p>浏览器里有阅读的上下文，电脑里有文件和开发工具，AI 对话却常常在另一个窗口。WebAgentMate 希望把这几部分连接起来：在当前网页旁提问，选择适合任务的智能体，需要时再接入本地工作目录。</p><p>内置智能体默认直接处理网页任务；连接助手只在使用电脑文件、命令或原生 Codex、Claude Code 时需要。会话留在当前设备，任务涉及的网页、消息或文件内容仍可能发送给所选模型服务。</p><p>项目以 MIT 协议开源。当前展示 0.6.0 开发预览，安装前请核对源码、扩展和连接助手的版本。公开连接助手安装包可能落后于开发源码。</p>"}
+    },
+    {
+      "type": "callout", "title": "OrcaRouter 推广说明", "subtitle": "", "layout": "default", "visible": true, "sort": 4,
+      "content": {"text": "内置智能体的 OrcaRouter 浏览器登录会携带项目推广码。通过此入口注册，后续符合条件的消费可能为开发者带来佣金。本项目不承诺推广奖励或额外免费额度；Codex 和 Claude Code 使用各自的登录。"}
+    }
+  ],
+  "published": true,
+  "featured": true,
+  "sort": 0
+}

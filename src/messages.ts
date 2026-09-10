@@ -16,7 +16,6 @@ export interface RemoteModel {
 export type BackgroundRequest =
   | { type: "auth:status" }
   | { type: "auth:connect" }
-  | { type: "auth:key"; key: string }
   | { type: "auth:disconnect" }
   | { type: "auth:verify" }
   | { type: "page:extract" }

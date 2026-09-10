@@ -74,7 +74,7 @@ ZIP 完整性和必要文件检查通过。Bridge 包包含可执行文件、安
 
 ## 仍需完成
 
-1. 在扩展设置中连接有可用额度的 OrcaRouter，通过本地内置执行：读取页面 → 操作 → 检查结果；读取文件 → 编辑 → 命令验证；两轮继续会话及一次真实长上下文整理。纯浏览器推理模式已移除。
+1. 在扩展设置中连接有可用额度的 OrcaRouter，分别验证浏览器模式的读取页面 → 操作 → 检查结果，以及本地模式的读取文件 → 编辑 → 命令验证；两轮继续会话及一次真实长上下文整理。浏览器模式于 2026-09-09 恢复，见文末记录。
 2. 在终端运行 `claude auth login`，恢复有效登录后执行真实 MCP 工具、跨进程续聊与停止测试。
 3. 以上完成后更新本记录，逐项复核并结束整体目标。当前不以模拟请求或目录读取代替这两项验收。
 
@@ -164,3 +164,84 @@ ZIP 完整性和必要文件检查通过。Bridge 包包含可执行文件、安
 - 本机 runtime 与扩展/Bridge ZIP 更新并校验；测试临时主机和浏览器配置已清理。未发布。真实 OrcaRouter 可用账户推理和 Claude 登录验收仍按上文记录，不以受控响应代替。
 
 本机证据：`/tmp/webmate-local-only-browser-result.json`、`/tmp/webmate-orca-rate.png`、`/tmp/webmate-orca-cycle-narrow.png`、`/tmp/webmate-local-only-config.png`。
+
+## 2026-09-09：浏览器内置循环与可选 Bridge 安装入口
+
+- 新会话默认由扩展页面执行内置 OrcaRouter 循环，浏览器工具和 IndexedDB 检查点直接在扩展内处理，无需安装 Bridge 或 Node.js。此变更取代 09-08 的全本地执行方案。选择“本机文件与命令”或 Codex / Claude 时仍使用 Bridge；不自动降级或改变所选模式。当前可选 Bridge 运行时仍依赖 Node.js 20+。
+- 既有浏览器/本地会话及备份保留原环境、记录、草稿、队列、权限和运行所有权。开启本机能力时自动授权重置为询问；更改已有会话的执行环境创建分支。任务仍由发起它的页面持有，关闭后不自动重放未确认操作。
+- 设置页、本机会话及目录选择中的缺失提示提供 Bridge 下载和安装说明；设置及会话入口可以重新检测连接。中英安装说明随扩展打包并在弹窗内打开，不依赖新文档先发布到 GitHub。下载入口指向项目 Releases；说明明确旧 v0.2.x 包不包含 v0.6 运行时。
+- `npm test`：86 项通过。覆盖无 Native Messaging 的浏览器工具与续聊、模型返回文件工具时的拒绝、取消授权后的零导航、未知结果恢复、环境切换及备份兼容。进程清理测试原先依赖 300 ms 内启动的竞态改为等待测试子进程发出就绪标记。
+- 六语言、TypeScript、扩展 Vite 构建和 Bridge runtime 构建通过。Vite 保留已有大 chunk 提示。
+- 隔离 Chrome for Testing 加载实际扩展，以受控 SSE 响应完成 browser_tabs → browser_read → 回复，实际读取测试网页并将结果送入下一次请求；扩展页面的 Native Messaging 连接数为 0。重新检测触发状态读取；本机模式缺少 Bridge 时阻止发送、保留草稿并显示安装入口。400 px / 320 px 布局检查通过。
+- 本轮未使用真实模型账户，也未发布新的 GitHub Release 或上传商店；真实服务验收沿用上方待办。源码构建已更新本地 `dist/`。
+
+## 2026-09-09：设置分类
+
+- 设置分为“模型服务”“本机能力”“通用”“关于”，六种语言均提供分类标签。设置入口及会话中主动点击的连接修复入口打开模型服务；Bridge 安装和检测集中在本机能力。语言和主题移至通用，关于增加项目与隐私链接。
+- 佣金说明在浏览器登录按钮上方常显，信息提示保留。分类切换保留尚未提交的 API Key，连接错误只显示在模型服务；返回聊天保留草稿并恢复设置按钮焦点。
+- `npm run build`、`git diff --check` 通过；`npm test` 86 项全部通过。Vite 仍提示已有的大 chunk 和依赖中的 `use client` 指令。
+- 独立 Chrome for Testing 验证实际构建、IndexedDB 和组件交互：六语言在 320 px 下四个分类均可见且内容无横向溢出，1280 px 独立页面内容限制在 680 px；键盘切换、API Key 输入保留、连接错误定位、Bridge 检测、登录/验证/断开按钮、语言与主题持久化、返回后的草稿和焦点检查通过。浅色/深色截图已查看。Chrome 连接接口使用合成响应，本轮未发起真实登录或模型消费。
+- 本次界面检查脚本与截图保存在本地忽略目录 `.test-output/settings-ui.cjs`、`.test-output/settings-*.png`。
+
+## 2026-09-09：参考 Rumy 调整设置布局
+
+- 参考本机 Rumy 的 `src/SidePanelApp.tsx`、`src/side-panel.css` 和设置截图，将顶部横向分类改为紧凑标题栏、左侧纵向导航和右侧独立滚动内容。保留现有四个分类及常显推广说明，通用偏好采用行式卡片，关于采用左对齐介绍与隐私卡片。
+- 按设置容器实际宽度适配：超过 560 px 时显示 150 px 图标加文字导航，窄容器使用 48 px 图标栏。图标按钮保留可访问名称和名称提示，支持 Tab/Enter 导航；隐藏分类保留已输入的 API Key，右上角关闭返回聊天并恢复焦点。
+- 构建、六语言检查、86 项测试和差异空白检查通过。独立 Chrome for Testing 检查六语言 320 px、400 px 侧栏、1280 px 页面及宽页面内 480 px 容器，导航宽度按容器变化且无横向溢出；浅色/深色、分类切换、连接反馈、API Key 输入、Bridge 检测、语言/主题持久化、关闭后草稿保留及连接修复定位通过。Chrome 连接接口继续使用合成响应。
+- 已查看宽窄布局截图，包括 `.test-output/settings-models-320.png`、`.test-output/settings-wide-general.png` 和 `.test-output/settings-wide-about.png`。
+
+## 2026-09-09：图形安装器与直接下载
+
+- Bridge 增加 macOS Intel / Apple Silicon DMG、Windows x64 EXE、Linux x64 DEB/RPM 的打包代码及发布工作流。安装包包含固定版本且经 SHA-256 校验的私有 Node 运行时，Bridge 优先使用包内 Node。此项取代上方“可选 Bridge 仍要求用户安装 Node.js”的开发状态；源码开发仍需要 Node。macOS/Windows 安装到当前账户，Linux 使用系统软件包安装。
+- 下载按钮使用真实系统信息选择安装包，允许切换平台和 Linux 格式。它查询与扩展版本一致的 GitHub Release，通过 Chrome downloads API 下载确切的项目文件；缺少该版本、网络失败和已开始下载分别反馈，不跳转 GitHub 页面。新增 `downloads` 权限并更新隐私说明、商店权限说明、中英 README 和内置安装指南。
+- 本机实际生成 `release/artifacts/webagentmate-bridge-macos-x64.dmg`，48,674,454 字节。只读挂载 DMG，使用其中的真实 payload 在隔离账户目录完成安装、升级、Native Messaging hello、agent bundle 加载和卸载登记；会话夹具保留。PATH 中没有用户安装的 Node，Bridge 使用包内运行时连接成功。本轮没有替换当前用户已安装的 Bridge。
+- `npm test`：92 项全部通过；Rust 8 项测试、release 构建、格式检查通过。最终扩展构建、TypeScript、六语言、安装脚本语法、工作流 YAML 和差异空白检查通过。Vite 保留已有的大 chunk 提示。
+- 隔离 Chrome for Testing 加载实际扩展，读取真实平台信息。GitHub API 使用受控的未发布、服务失败和匹配资源响应；第一个下载保留真实 Chrome downloads API，只将 URL 改向本地实际 DMG。下载完成且 SHA-256 与源文件一致，未运行下载文件。其余平台记录实际按钮交付的文件名及 GitHub 直链，确认五种格式均匹配、没有新增标签页。验证失败后可重试、键盘打开菜单、320 px/400 px 布局、内置无命令安装指南；没有页面错误。
+- 本机证据：`/tmp/webmate-installer-real-install.log`、`/tmp/webmate-installer-ui-results.json`、`/tmp/webmate-installer-download-400.png`、`/tmp/webmate-installer-menu-320.png`。DMG SHA-256：`51064a6fefdbcb7ffa3e4671e9fe5a85aa4e150603bb562ff654b064c446b3fa`。
+- 尚未发布新 Release。此本机 DMG 为开发签名，未完成 Developer ID 签名或 Apple 公证；Mac ARM 构建、Windows EXE 与 Linux 软件包的目标平台检查尚未实际运行。CI 已配置两种 Mac 架构的安装/升级检查、Windows 静默安装/卸载、Linux DEB 安装/卸载和 RPM 构建/元数据检查；RPM 实际安装及各平台图形流程仍需桌面验收。公开发布会检查 macOS 签名/公证及 Windows 签名，配置方式见 [INSTALLER-DEVELOPMENT.md](INSTALLER-DEVELOPMENT.md)。
+
+## 2026-09-10：文件夹下载入口、紧凑会话列表与多语言安装说明
+
+- Bridge 不可用时，文件夹入口显示灰色背景及下载提示，鼠标点击或键盘 Enter 直接下载匹配安装器，并反馈已开始、尚未发布或失败；共享下载逻辑防止同一入口重复请求。Bridge 可用时保留目录浏览与选择，不触发下载。下载不改变草稿和会话配置。
+- 移除会话列表的导入备份按钮、隐藏文件输入及对应界面处理，保留导出、搜索、分支、改名和删除。普通及分支会话统一为两行，实测高度从最小 66 px 调整为 52 px；分支来源由标题旁图标的提示和可访问名称提供。悬停背景覆盖整行，内部选择按钮保持透明，选中背景在悬停时保持一致。
+- 设置中的“本机能力”改为“本地连接”，其他五种语言同步。安装说明独立提供英语、简体中文、繁体中文、日语、德语和巴西葡萄牙语，跟随当前界面语言；覆盖下载、三类系统安装、启动、更新和卸载，不再混排中英文文档。
+- `npm test` 92 项通过；最终 TypeScript、六语言检查、扩展构建与差异空白检查通过。Vite 保留已有大 chunk 和依赖注释提示。
+- 隔离 Chrome 加载实际扩展构建，使用真实 IndexedDB、设置、组件和平台识别。GitHub 资源响应、Chrome 下载调用和目录返回使用受控夹具，本轮没有请求真实模型或安装新 Bridge。验证键盘直接下载、重复点击只有一次请求、未发布/失败后重试、草稿保留、连接可用后的目录浏览与选择。
+- 实测七条会话（含分支）在 320 px、浅色和深色下均为 52 px；整行悬停/选中颜色匹配主题，内部按钮不叠背景，搜索和键盘切换保留草稿。六种语言的设置名称和安装正文均匹配，安装弹窗在 320 px 下无横向溢出；页面无异常。证据为 `/tmp/webmate-ui-polish-results.json`、`/tmp/webmate-ui-polish-list-light-320.png`、`/tmp/webmate-ui-polish-list-dark-320.png` 及 `/tmp/webmate-ui-polish-guide-*-320.png`。
+- 本地 `dist/` 已更新，未发布或推送。安装包发布和签名状态沿用上节；匹配安装包未发布时，下载入口明确提示未发布。
+
+## 2026-09-10：连接助手文案与独立页面图标行为
+
+- 设置卡片由技术名称改为“连接这台电脑”，操作为“下载连接助手”，状态为“已连接 / 未连接”。说明直接介绍访问电脑文件、运行命令、连接 Codex / Claude Code 的用途，并说明网页任务无需安装。文件夹提示、连接失败提示和安装说明同步六种语言；内部主机标识和下载文件名保留兼容。
+- 安装器应用名称统一为 WebAgentMate Connector，中英 README、安装文档和商店说明同步。macOS DMG 已重新生成，使用新名称应用内的实际 payload 在隔离账户目录验证安装、升级、runtime 加载、Native Messaging hello 和卸载登记；PATH 不包含用户 Node，未修改当前账户的安装。其他平台构建及正式签名、发布状态沿用前述待办。
+- 当前标签页为独立会话页面时，点击 Chrome 工具栏扩展图标会新增同一会话的标签页；普通网页仍打开侧栏。直接调用侧栏 API 保留用户手势，声明最低 Chrome 116。原独立页面不导航、不重启任务，既有会话运行所有权约束继续生效。
+- `npm test` 94 项通过，包含重复打开、含特殊字符的会话 URL、无会话参数、缺失/无效/相似 URL 及侧栏同步调用检查。最终六语言、TypeScript、扩展构建、安装脚本语法、工作流 YAML 和差异空白检查通过。
+- 隔离 Chrome 加载实际扩展，检查六语言的卡片和安装指南在 320 px 下无横向溢出；修正德语标题中途断词，检查中日德截图及浅色/深色主题。400 px 下验证下载按钮文案、下载后的反馈和重新检测显示“已连接”。此轮连接与 GitHub 资源响应、下载调用使用受控夹具，没有真实模型请求。
+- 浏览器中调用同一份工具栏处理函数，通过真实 Chrome tabs API 连续创建两个不同标签页，确认会话 URL 和草稿一致、原页面标记与 timeOrigin 不变。自动化未模拟点击浏览器工具栏本身；普通网页打开侧栏的同步调用由单元测试覆盖。证据：`/tmp/webmate-connector-ui-results.json`、`/tmp/webmate-connector-tab-results.json`、`/tmp/webmate-connector-card-*-320.png`、`/tmp/webmate-connector-card-zh_CN-400.png`、`/tmp/webmate-connector-install-check.log`。
+- 本地 `dist/` 已更新，未推送或发布；新版安装包尚未公开，macOS 本地 DMG 仍为未经公证的开发构建。
+
+## 2026-09-10：Codex 标签页切换与闪动
+
+- 排查发现，Codex 设置的标签页在隐藏时销毁，重新访问会再次调用列表接口；每次接口调用经连接助手启动新的 Codex App Server 并初始化，技能读取还强制重扫。居中弹窗根据不同内容高度重新定位，使加载和切换期间出现明显位移。
+- 标签页按需首次读取，保留当前工作目录下的列表、搜索条件和分页状态，切回不再重建请求。进行中的只读请求可以完成并留在原标签页；交互操作在离开时取消，关闭弹窗或改变工作目录会取消旧请求并清除相应状态。新工作目录下尚未打开的标签页不提前发起读取。
+- 关闭切换动画，隐藏页立即退出布局。Codex 内容区保持固定高度并在内部滚动，按视口限制大小。加载状态提供六语言提示，首次读取不闪现“暂无结果”；刷新保留旧列表。只读请求超过 45 秒提供可重试反馈，技能强制重扫仅由刷新按钮触发，技能/MCP 搜索不再为本地过滤重新启动读取。
+- `npm run build`、六语言、TypeScript 和差异空白检查通过；当前自动化测试 99 项通过。此轮未修改或重打包本地运行时，没有发起真实模型请求或操作用户的 Codex 配置。
+- 在隔离 Chrome 中使用真实扩展、IndexedDB 和 UI，Native Messaging 数据以受控目录、列表及延迟响应提供。旧版按技能 → MCP → 历史各访问两次产生 6 次列表请求，修正后仅 3 次。500 ms 响应夹具下旧版每次等待约 0.8–1.2 秒，修正后回切约 0.1–0.2 秒；这些时间包含自动化交互开销，不代表真实 Codex 首次启动耗时。
+- 相同 800 × 850 视口下，修正后六次切换的弹窗顶部均为 94 px、高度均为 662 px；旧版顶部随列表类型在约 159–187 px 间变化，加载中也发生变化。验证待返回请求的快速来回切换无重复请求、搜索词保留、手动刷新保留列表、切换目录取消旧请求且按新目录加载、关闭弹窗取消隐藏页请求。加速的超时夹具验证错误反馈及重试恢复；六语言 320 × 640 和 320 × 480 短窗口布局通过，已检查中日德及浅色/深色截图，页面无异常。
+- 证据：`/tmp/webmate-codex-tabs-before.json`、`/tmp/webmate-codex-tabs-after.json`、`/tmp/webmate-codex-tabs-lifecycle.json`、`/tmp/webmate-codex-tabs-locales.json`、`/tmp/webmate-codex-tabs-stable-800.png`、`/tmp/webmate-codex-tabs-loading-*-320.png`。首次读取仍需要本地 Codex 返回；本次没有改为常驻 Codex 服务。`dist/` 已更新，未推送或发布。
+
+## 2026-09-10：OrcaRouter 仅保留浏览器登录
+
+- 移除设置中的 API Key 输入和连接方式切换，以及消息类型和后台的 `auth:key` 处理入口。旧入口请求返回不支持，不能写入或覆盖连接凭据；浏览器登录的 PKCE、回调、scope 和凭据校验继续保留。
+- 清理专用样式、无用文案和手动连接说明；连接失效或登录失败提示引导重新登录。验证连接、断开连接和现有凭据读取继续可用。
+- 99 项测试、六语言检查、TypeScript、扩展构建与差异空白检查通过。实际构建的浏览器检查覆盖取消、失败、键盘重试、连接验证和断开；中文浅色、英文深色的 320 px 界面均只显示登录入口。Chrome 连接接口使用受控响应，未发起真实登录或模型请求。
+- `dist/` 已更新，未推送或发布。界面证据：`.test-output/orca-login-only-320.png`、`.test-output/orca-login-only-en-dark-320.png`。
+
+## 2026-09-10 发布准备补充
+
+- 扩展构建及 99 项 Node 测试通过；连接助手运行时构建、Rust 格式检查及 8 项 Rust 测试通过。补充 `tsconfig.runtime.json` 的 Chrome Side Panel 类型声明范围，修复运行时构建的 `sidePanel.open` 类型错误。
+- 使用独立 Chrome for Testing 实际加载构建产物；公开模型目录正常返回，DeepSeek 提供商可以展开、选择并保存。商店截图来自实际扩展界面，无用户凭据或私密聊天；任务草稿没有发送。
+- 商店 ZIP 已准备：`release/artifacts/webagentmate-chrome-0.6.0.zip`，16 个运行文件，根目录 manifest，所有图标与六种语言文件存在；ZIP 完整性检查通过，无源码、source map、文档或连接助手安装包。
+- [网站作品页](https://wintc.top/products/webagentmate)已发布，当前状态为开发预览；已上传图标和 3 张实际产品截图，附安装入口和推广说明。
+- 中英文 README 置顶推广注册链接。独立浏览器验证注册页接收项目 `ref` 并存储；未创建测试账号、消费或验证佣金结算。
+- Chrome Web Store 尚未提交；本轮未连接到用户已登录的浏览器。OrcaRouter 合作后台的最新 `app_id` 与回调登记状态也尚未重新核实。

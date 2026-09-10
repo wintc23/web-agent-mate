@@ -1,6 +1,6 @@
 .ws-shell { height: 100dvh; max-width: 900px; margin: auto; display: flex; flex-direction: column; background: var(--conversation-bg); font-size: 14px; line-height: 1.6; }
 .ws-shell.ws-page { width: 100%; max-width: none; }
-.ws-page :is(.ws-header, .ws-stream, .ws-composer-dock, .ws-settings) { padding-inline: clamp(12px, 2vw, 36px); }
+.ws-page :is(.ws-header, .ws-stream, .ws-composer-dock) { padding-inline: clamp(12px, 2vw, 36px); }
 .ws-shell *, .ws-modal *, .ws-session-drawer * { box-sizing: border-box; }
 .ws-header { flex: 0 0 62px; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); background: var(--surface); }
 .ws-header-left { display: flex; align-items: center; min-width: 0; gap: 8px; }
@@ -41,12 +41,18 @@
 .ws-composer-selectors { min-width: 0; flex: 1; display: flex; flex-wrap: wrap; gap: 0 6px; }
 .ws-composer-selectors .ant-btn { max-width: 100%; min-width: 0; }
 .ws-route.ant-btn, .ws-workspace-trigger.ant-btn { justify-content: start; padding-inline: 6px; font-size: 11px; color: var(--text-secondary); }
+.ws-workspace-trigger.is-unavailable.ant-btn { background: var(--surface-muted); }
+.ws-workspace-trigger.is-unavailable.ant-btn:not(:disabled):is(:hover, :focus-visible) { color: var(--brand-action); }
 .ws-route > span:not(.anticon):not(.ant-btn-icon), .ws-workspace-trigger > span:not(.ant-btn-icon) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ws-send.ant-btn { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 10px; }
 .ws-stop.ant-btn { width: 34px; height: 34px; border-radius: 10px; color: var(--text-primary); background: var(--surface-muted); border-color: var(--border-control); }
 .ws-stop.ant-btn:is(:hover,:focus-visible) { color: var(--error); border-color: var(--error); }
-.ws-permission.ant-btn { font-size: 11px; padding-inline: 6px; color: var(--text-secondary); max-width: 100%; }
-.ws-permission.is-auto.ant-btn { color: var(--brand-action); background: var(--brand-soft); }
+.ws-permission.ant-btn { height: auto; min-height: 28px; font-size: 0.75rem; padding: 3px 8px; gap: 6px; border: 1px solid var(--border-subtle); border-radius: 8px; color: var(--text-secondary); background: var(--surface-muted); max-width: 100%; white-space: normal; }
+.ws-permission.is-auto.ant-btn { color: var(--warning); background: var(--warning-bg); }
+.ws-permission.ant-btn .anticon-down { font-size: 9px; }
+.ws-inline-settings { display: inline; padding: 0; border: 0; border-radius: 2px; color: var(--brand-action); background: transparent; font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.ws-inline-settings:hover { color: var(--brand-hover); }
+.ws-inline-settings:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .ws-permission-option { display: flex; flex-direction: column; gap: 3px; max-width: min(270px, calc(100vw - 90px)); white-space: normal; }
 .ws-permission-option strong { font-size: 12px; font-weight: 550; }
 .ws-permission-option small { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
@@ -74,32 +80,88 @@
 .ws-session-toolbar { display: flex; gap: 8px; margin-bottom: 14px; }
 .ws-session-toolbar > .ant-btn:first-child { flex: 1; }
 .ws-session-drawer .ant-segmented { margin: 12px 0; }
-.ws-session-list { margin: 8px -4px; min-height: 80px; }
-.ws-session-list article { display: flex; align-items: center; border-radius: 10px; margin: 4px 0; padding-right: 3px; }
-.ws-session-list article.selected { background: var(--user-message); }
-.ws-session-select.ant-btn { flex: 1; min-width: 0; height: auto; min-height: 66px; padding: 10px 8px; justify-content: start; text-align: start; }
+.ws-session-list { margin: 8px -4px; padding: 0; list-style: none; min-height: 80px; }
+.ws-session-list > li { display: flex; align-items: center; border-radius: 8px; margin: 2px 0; padding-right: 4px; }
+.ws-session-list > li:not(.selected):hover { background: var(--surface-muted); }
+.ws-session-list > li.selected { background: var(--brand-soft); }
+.ws-session-list .ws-session-select.ant-btn { flex: 1; min-width: 0; height: auto; min-height: 52px; padding: 6px 8px; gap: 8px; justify-content: start; text-align: start; }
+.ws-session-list > li .ws-session-select.ant-btn:not(:disabled):is(:hover, :active) { background: transparent; color: var(--text-primary); }
+.ws-session-list > li.selected .ws-session-title { color: var(--brand-action); }
+.ws-session-list .ws-session-more.ant-btn { flex: 0 0 28px; width: 28px; height: 28px; border-radius: 6px; color: var(--text-secondary); }
 .ws-session-description { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.ws-session-description strong, .ws-session-description small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; width: 100%; }
-.ws-session-description strong { font-size: 12px; font-weight: 550; }
-.ws-session-description small { font-size: 10px; color: var(--text-secondary); margin-top: 3px; }
-.ws-settings { padding: 20px 18px 30px; overflow-y: auto; }
-.ws-settings > .ant-alert { margin-top: 18px; }
-.ws-connection-section { padding: 24px 0; border-bottom: 1px solid var(--border-subtle); }
+.ws-session-title { display: flex; align-items: center; gap: 6px; min-width: 0; line-height: 20px; }
+.ws-session-title strong, .ws-session-description small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ws-session-title strong { min-width: 0; font-size: 0.8125rem; font-weight: 550; }
+.ws-session-title .anticon { flex-shrink: 0; color: var(--text-secondary); font-size: 11px; }
+.ws-session-description small { font-size: 0.6875rem; color: var(--text-secondary); line-height: 16px; }
+.ws-install-guide { font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.ws-install-guide h2 { font-size: 15px; margin: 20px 0 8px; }
+.ws-install-guide ol { padding-inline-start: 22px; }
+.ws-install-guide li + li { margin-top: 6px; }
+.ws-settings-open { container: ws-settings / inline-size; background: var(--surface); }
+.ws-settings-header { flex: 0 0 42px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 8px 4px 12px; background: var(--brand-soft); }
+.ws-settings-header > div:first-child { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.ws-settings-header > div:first-child > .anticon { color: var(--brand-action); font-size: 1.125rem; }
+.ws-settings-header .ant-btn { width: 28px; height: 28px; }
+.ws-settings-title { margin: 0; font-size: 0.875rem; font-weight: 600; }
+.ws-settings { flex: 1; min-height: 0; display: grid; grid-template-columns: 48px minmax(0, 1fr); overflow: hidden; }
+.ws-settings-navigation { display: flex; flex-direction: column; gap: 4px; min-height: 0; overflow-y: auto; padding: 12px 6px; border-right: 1px solid var(--border-subtle); }
+.ws-settings-navigation button { display: flex; flex: none; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 36px; padding: 6px 0; border: 0; border-radius: 8px; color: var(--text-secondary); background: transparent; text-align: start; cursor: pointer; }
+.ws-settings-navigation button > .anticon { flex: none; font-size: 1rem; }
+.ws-settings-navigation button:hover { background: var(--surface-muted); color: var(--text-primary); }
+.ws-settings-navigation button[aria-current="page"] { background: var(--brand-soft); color: var(--brand-action); font-weight: 600; }
+.ws-settings-navigation-label { display: none; min-width: 0; overflow-wrap: anywhere; font-size: 0.8125rem; line-height: 1.5; }
+.ws-settings-navigation button:focus-visible, .ws-settings-title:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.ws-settings-content { min-width: 0; overflow: auto; padding: 18px 12px 32px; scrollbar-gutter: stable; }
+.ws-settings-section { max-width: 820px; margin-inline: auto; }
+.ws-settings-section[hidden] { display: none; }
+.ws-settings-section-label { margin: 0 0 10px 4px; color: var(--brand-action); font-size: 0.75rem; font-weight: 600; }
+.ws-settings-section > .ant-alert { margin-bottom: 12px; }
+.ws-settings-card { min-width: 0; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface); }
+.ws-connection-section { padding: 16px 14px; }
 .ws-connection-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
 .ws-connection-heading > div { flex: 1; min-width: 0; }
-.ws-connection-heading strong { font-size: 14px; font-weight: 600; }
+.ws-connection-heading h3 { margin: 0; font-size: 0.875rem; font-weight: 600; }
 .ws-connection-heading p { font-size: 11px; line-height: 1.5; color: var(--text-secondary); margin: 4px 0 0; }
 .ws-connection-heading .ant-tag { margin-inline-end: 0; font-size: 10px; }
-.ws-connection-section > .ant-btn, .ws-connection-section form > .ant-btn { margin-top: 12px; }
-.ws-connection-section form { margin-top: 14px; }
-.ws-connection-section form p { margin-bottom: 0; font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
+.ws-local-heading { flex-wrap: wrap; margin-bottom: 8px; }
+.ws-local-heading > div { min-width: min-content; }
+.ws-local-heading h3 { overflow-wrap: normal; }
+.ws-connector-actions, .ws-connector-actions > .ant-space-item, .ws-connector-download { max-width: 100%; min-width: 0; }
+.ws-connector-download > .ant-btn:first-child { flex: 1; min-width: 0; height: auto; min-height: 36px; white-space: normal; overflow-wrap: anywhere; text-align: start; }
+.ws-connector-download > .ant-btn:last-child { flex-shrink: 0; height: auto; }
+.ws-orca-heading { margin-bottom: 10px; }
+.ws-connection-description { margin: 0 0 16px; color: var(--text-secondary); font-size: 0.75rem; font-weight: 400; line-height: 1.6; }
+.ws-affiliate-disclosure { margin: 12px 0 0; color: var(--text-secondary); font-size: 0.75rem; font-weight: 400; line-height: 1.7; overflow-wrap: anywhere; }
+.ws-login-panel { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+.ws-login-panel .ws-affiliate-disclosure { margin: 0; }
+.ws-login-button.ant-btn { min-width: 0; height: auto; min-height: 40px; padding: 8px 10px; border-radius: 8px; font-weight: 500; line-height: 1.5; white-space: normal; word-break: keep-all; overflow-wrap: anywhere; }
 .ws-adapters > div { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; font-size: 12px; }
 .ws-adapters .ant-tag { margin: 0; }
-.ws-appearance { padding-top: 20px; }
-.ws-appearance h2 { font-size: 13px; font-weight: 600; margin: 0 0 18px; }
-.ws-about { padding: 38px 10px; text-align: center; }
-.ws-about h2 { font-size: 20px; }
-.ws-about p { color: var(--text-secondary); font-size: 12px; }
+.ws-settings-row { display: flex; flex-direction: column; gap: 8px; min-height: 52px; padding: 12px; border-bottom: 1px solid var(--border-subtle); font-size: 0.8125rem; }
+.ws-settings-row:last-child { border-bottom: 0; }
+.ws-settings-row > :is(.ant-select, .ant-segmented) { width: 100%; min-width: 0; }
+.ws-settings-privacy h3 { font-size: 0.875rem; font-weight: 600; margin: 0 0 12px; }
+.ws-settings-hint, .ws-settings-privacy p { margin: 18px 0 0; color: var(--text-secondary); font-size: 0.8125rem; line-height: 1.7; }
+.ws-settings-privacy { padding: 14px; margin-top: 20px; background: var(--surface-muted); }
+.ws-settings-privacy p { margin: 0; }
+.ws-about { padding: 6px 4px 0; }
+.ws-about-heading { display: flex; align-items: center; gap: 10px; }
+.ws-about h3 { font-size: 0.875rem; margin: 0; }
+.ws-about small { color: var(--text-secondary); font-size: 0.75rem; }
+.ws-about p { margin: 16px 0; color: var(--text-secondary); font-size: 0.8125rem; line-height: 1.7; }
+@container ws-settings (min-width: 421px) {
+  .ws-settings-row { flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; }
+  .ws-settings-row > .ant-select { flex: 0 1 180px; }
+  .ws-settings-row > .ant-segmented { flex: 0 1 280px; }
+}
+@container ws-settings (min-width: 561px) {
+  .ws-settings { grid-template-columns: 150px minmax(0, 1fr); }
+  .ws-settings-navigation { padding-inline: 8px; }
+  .ws-settings-navigation button { justify-content: flex-start; padding-inline: 10px; }
+  .ws-settings-navigation-label { display: block; }
+  .ws-settings-content { padding: 20px 24px 32px; }
+}
 .ws-modal { max-width: calc(100vw - 24px); }
 .ws-modal .ant-modal-content { padding: 20px; border-radius: 16px; }
 .ws-modal .ant-modal-body { padding-top: 12px; max-height: calc(100dvh - 220px); overflow: auto; }
@@ -130,7 +192,21 @@
 .ws-folder-list .ant-btn { justify-content: start; height: auto; min-height: 34px; white-space: normal; text-align: start; }
 @media (prefers-reduced-motion: reduce) { .ws-shell *, .ws-session-drawer *, .ws-modal * { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 /* Codex capability panels share the workspace theme and keep narrow panels stable. */
-.ws-codex-manager .ant-modal-body{max-height:min(72vh,760px);overflow:auto;scrollbar-gutter:stable}
+.ws-agent-config .ant-modal-body { max-height: min(72dvh, 760px); overflow: auto; scrollbar-gutter: stable; }
+.ws-agent-config-codex .ant-modal-body { height: min(64dvh, 560px); max-height: calc(100dvh - 180px); }
+.ws-codex-tabs .ant-tabs-tabpane[aria-hidden="true"] { display: none; }
+.ws-agent-config .ant-modal-title { padding-inline-end: 24px; }
+.ws-agent-config .ant-tabs-nav { margin-bottom: 18px; }
+.ws-agent-config .ant-tabs-tab { padding-block: 10px; font-size: 0.75rem; }
+.ws-agent-config .ant-tabs-tab + .ant-tabs-tab { margin-inline-start: 18px; }
+.ws-config-group { min-width: 0; margin: 0 0 18px; padding: 14px 12px 0; border: 1px solid var(--border-subtle); border-radius: 10px; }
+.ws-config-group legend { width: auto; margin: 0; padding-inline: 5px; color: var(--text-secondary); font-size: 0.75rem; }
+.ws-config-group > .ant-alert { margin-bottom: 14px; }
+.ws-config-error { margin-block: 0 14px; }
+.ws-capability-workspace { margin: 0 0 12px; font-size: 0.75rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.ws-codex-capabilities { min-width: 0; }
+.ws-catalog-status { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 0.75rem; color: var(--text-secondary); }
+.ws-codex-capabilities .ant-btn { height: auto; min-height: 32px; white-space: normal; }
 .ws-codex-card{padding:14px 0;border-bottom:1px solid var(--border-subtle);overflow-wrap:anywhere}
 .ws-codex-card strong{display:inline-block;margin-right:8px;max-width:100%}
 .ws-codex-card p{font-size:13px;line-height:1.5;margin:8px 0;color:var(--text-secondary)}

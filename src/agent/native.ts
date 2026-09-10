@@ -8,6 +8,7 @@ interface NativeOptions { codexRequest?: CodexRequest; onResult?: (result: any) 
 export function runNative(session: Session, prompt: string, context: RunContext, apiKey?: string, modelsOnly = false, options: NativeOptions = {}): Promise<EngineModel[]> {
   aborted(context.signal);
   assertConfig(session.config);
+  if (session.config.location !== "local") throw new Error("LOCAL_ENGINE_REQUIRES_BRIDGE");
   const port = chrome.runtime.connectNative("ai.webagentmate.bridge");
   const send = (params: unknown, first = false) => {
     for (const [index, frame] of encodeRuntimeMessage(params).entries()) port.postMessage({ id: crypto.randomUUID(), protocolVersion: 1, method: first && index === 0 ? "runtime.open" : "runtime.send", params: frame });

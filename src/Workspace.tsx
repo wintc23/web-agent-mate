@@ -3,24 +3,25 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { workspaceTheme } from "./workspace-theme";
 import { ExportOutlined } from "@ant-design/icons";
 import { agentPageUrl, openAgentPage } from "./agent/page";
-import { PlusOutlined, MenuOutlined, SettingOutlined, CloseOutlined, SendOutlined, StopOutlined, DownOutlined, CodeOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, UploadOutlined, ForkOutlined, ArrowLeftOutlined, ReloadOutlined, LoadingOutlined, CheckOutlined } from "@ant-design/icons";
+import { PlusOutlined, MenuOutlined, SettingOutlined, CloseOutlined, SendOutlined, StopOutlined, DownOutlined, CodeOutlined, CloudOutlined, InfoCircleOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, ForkOutlined, ReloadOutlined, LoadingOutlined, CheckOutlined } from "@ant-design/icons";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { LANGUAGE_OPTIONS, resolveLanguage, translate, type LanguagePreference, type TranslationKey } from "./locales";
 import type { AuthStatus, AgentAdapter, BackgroundRequest, BackgroundResponse, RemoteModel } from "./messages";
-import { DEFAULT_CONFIG, aborted, type AgentConfig, type Entry, type PermissionMode, type RunContext, type Session, type UserRequest } from "./agent/protocol";
+import { DEFAULT_CONFIG, aborted, configTransition, requiresBridge, type AgentConfig, type Entry, type PermissionMode, type RunContext, type Session, type UserRequest } from "./agent/protocol";
 import { enqueueMessage, takeQueuedMessage, removeQueuedMessage, preserveInterruptedReply } from "./agent/message-queue";
 import { autoAllows } from "./agent/permissions";
-import { SessionStore, applyEvent, claimRun, checkRun, matchesSession, LEASE_MS } from "./agent/sessions";
+import { SessionStore, applyEvent, claimRun, checkRun, matchesSession, reconcileSessions, LEASE_MS } from "./agent/sessions";
 import { legacyOwnerIsGone, recoverRun, replyToRun, stopRun, withRunLock } from "./agent/run-coordination";
-import { MAX_BACKUP_BYTES, parseSessionBackup, serializeSession } from "./agent/session-backup";
+import { serializeSession } from "./agent/session-backup";
 import { agentErrorText } from "./agent/error-text";
 import { readProviderIssue } from "./agent/provider-error";
 import { ProviderNotice } from "./provider-notice";
-import { nativeModels, runNative, type EngineModel } from "./agent/native";
-import { workspaceText, phaseText, turnLimitText } from "./workspace-i18n";
+import { runAgent } from "./agent/runner";
+import { BridgeSetup } from "./bridge-setup";
+import { workspaceText, phaseText } from "./workspace-i18n";
 import "./workspace.css";
-import { Alert, AutoComplete, Button, Collapse, ConfigProvider, Drawer, Dropdown, Empty, Form, Input, InputNumber, Modal, Segmented, Select, Space, Switch, Tooltip } from "antd";
+import { Alert, Button, Collapse, ConfigProvider, Drawer, Dropdown, Empty, Form, Input, Modal, Segmented, Select, Space, Tooltip, Typography } from "antd";
 import type { TextAreaRef } from "antd/es/input/TextArea";
 import { MoreOutlined, SearchOutlined, SafetyOutlined, ThunderboltOutlined, ArrowUpOutlined } from "@ant-design/icons";
 import enUS from "antd/locale/en_US";
@@ -29,8 +30,10 @@ import zhTW from "antd/locale/zh_TW";
 import jaJP from "antd/locale/ja_JP";
 import deDE from "antd/locale/de_DE";
 import ptBR from "antd/locale/pt_BR";
-import { AgentAvatar, ConnectionPanel, ModelPicker, WorkspacePicker, connectionError } from "./workspace-controls";
-import { CodexManager, CodexSettingsFields, ElicitationForm } from "./codex-controls";
+import { AgentAvatar, ConnectionPanel, LocalConnectionPanel, WorkspacePicker, connectionError } from "./workspace-controls";
+import { SettingsSections, type SettingsTab } from "./workspace-settings";
+import { AgentConfigDialog } from "./agent-config-dialog";
+import { ElicitationForm } from "./elicitation-form";
 import { codexThreadSeed, type NativeControl } from "./agent/codex";
 import { codexText } from "./codex-i18n";
 
@@ -68,9 +71,9 @@ export function Workspace(): React.JSX.Element {
   const [query, setQuery] = useState("");
   const [sessionError, setSessionError] = useState("");
   const [managingSession, setManagingSession] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<string | { kind: "connectionRequired" }>("");
   const [settings, setSettings] = useState(false);
-  const [about, setAbout] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("models");
   const [preference, setPreference] = useState<LanguagePreference>("auto");
   const [theme, setTheme] = useState("system");
   const [componentTheme, setComponentTheme] = useState(() => workspaceTheme(false));
@@ -79,8 +82,6 @@ export function Workspace(): React.JSX.Element {
   const [auth, setAuth] = useState<AuthStatus>();
   const [adapters, setAdapters] = useState<AgentAdapter[]>([]);
   const [models, setModels] = useState<RemoteModel[]>(LOCAL_MODELS);
-  const [engineModels, setEngineModels] = useState<EngineModel[]>([]);
-  const [loadingModels, setLoadingModels] = useState(false);
   const [busy, setBusy] = useState(false);
   const [config, setConfig] = useState<AgentConfig>({ ...DEFAULT_CONFIG });
   const [pending, setPending] = useState<Pending[]>([]);
@@ -93,17 +94,17 @@ export function Workspace(): React.JSX.Element {
   const [historyCursor, setHistoryCursor] = useState<number | null>(null);
   const owner = useRef(crypto.randomUUID());
   const textarea = useRef<TextAreaRef>(null);
+  const settingsButton = useRef<HTMLButtonElement>(null);
+  const settingsTitle = useRef<HTMLHeadingElement>(null);
   const stream = useRef<HTMLElement>(null);
   const [sessionOpen, setSessionOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
-  const [codexOpen, setCodexOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [changingPermission, setChangingPermission] = useState(false);
-  const importInput = useRef<HTMLInputElement>(null);
+  const [permissionOpen, setPermissionOpen] = useState(false);
   const runRef = useRef<OwnedRun>();
-  const modelRequest = useRef<AbortController>();
   const runQueuedRef = useRef<(sessionId: string, messageId?: string) => Promise<void>>(async () => undefined);
   const sendingRef = useRef(false);
   const closingRef = useRef(false);
@@ -129,6 +130,8 @@ export function Workspace(): React.JSX.Element {
   } } : undefined;
   const queuedMessages = current?.queuedMessages ?? [];
   const permissionMode = current?.config.permissionMode ?? "ask";
+  const permissionButtonLabel = s("permissionButton").replace("{mode}", permissionMode === "auto" ? s("permissionAutomatic") : s("permissionAsk"));
+  const [connectionBefore, connectionAfter] = s("connectRequired").split("{settings}");
   const history = current?.entries.filter(entry => entry.kind === "user").map(entry => entry.text) ?? [];
 
   const replaceSession = (next: Session) => setSessions(items => [...items.filter(item => item.id !== next.id), next].sort((a, b) => b.updatedAt - a.updatedAt));
@@ -136,6 +139,11 @@ export function Workspace(): React.JSX.Element {
     const next = await store.update(id, mutate, touch); replaceSession(next); return next;
   };
   const fail = (error: unknown) => setNotice(String(error instanceof Error ? error.message : error));
+  const openSettings = (tab: SettingsTab = "models") => { setSettingsTab(tab); setSettings(true); };
+  const closeSettings = () => {
+    setSettings(false);
+    requestAnimationFrame(() => settingsButton.current?.focus());
+  };
   const flushDraft = () => {
     const id = selectedRef.current; const value = draftRef.current;
     if (!id || value === savedDraftRef.current) return draftWrites.current;
@@ -178,12 +186,6 @@ export function Workspace(): React.JSX.Element {
       setSessionError(code === "INVALID_SESSION_BACKUP" ? s("invalidBackup") : code === "SESSION_BACKUP_TOO_LARGE" ? s("backupTooLarge") : code === "SESSION_BUSY" ? s("sessionBusy") : code);
     } finally { setManagingSession(false); }
   };
-  const importSession = async (file: File) => {
-    if (file.size > MAX_BACKUP_BYTES) throw new Error("SESSION_BACKUP_TOO_LARGE");
-    const backup = parseSessionBackup(await file.text());
-    const session = await store.create(backup.config, backup);
-    replaceSession(session); await select(session); setSettings(false);
-  };
   const forkSession = async (id: string) => {
     await flushDraft();
     const session = await store.fork(id);
@@ -199,6 +201,13 @@ export function Workspace(): React.JSX.Element {
       (async () => setAuth(await message({ type: "auth:status" })))(),
       (async () => setAdapters((await message({ type: "agents:list" })).adapters))(),
       (async () => { const result = await message({ type: "models:list" }); setModels(result.models.length ? result.models : LOCAL_MODELS); })()
+    ]);
+    for (const result of results) if (result.status === "rejected") fail(result.reason);
+  };
+  const checkBridge = async () => {
+    const results = await Promise.allSettled([
+      (async () => setAuth(await message({ type: "auth:status" })))(),
+      (async () => setAdapters((await message({ type: "agents:list" })).adapters))()
     ]);
     for (const result of results) if (result.status === "rejected") fail(result.reason);
   };
@@ -238,6 +247,7 @@ export function Workspace(): React.JSX.Element {
     apply(); media.addEventListener("change", apply); return () => media.removeEventListener("change", apply);
   }, [theme, language]);
   useEffect(() => { if (isAtBottom) stream.current?.scrollTo({ top: stream.current.scrollHeight }); }, [current?.entries, pending, selected]);
+  useEffect(() => { if (settings) settingsTitle.current?.focus(); }, [settings]);
   useEffect(() => { const timer = setTimeout(() => { if (ready) void flushDraft().catch(fail); }, 200); return () => clearTimeout(timer); }, [draft, selected, ready]);
   syncRef.current = async () => {
     const selectionAtStart = selectedRef.current;
@@ -280,7 +290,7 @@ export function Workspace(): React.JSX.Element {
     for (const item of abandoned) await recoverRun(store, item, s("restartNotice"), legacyGone);
     if (abandoned.length) list = await store.list();
     if (closingRef.current || selectionAtStart !== selectedRef.current) return;
-    setSessions(list);
+    setSessions(previous => reconcileSessions(previous, list));
     const selectedSession = list.find(item => item.id === selectedRef.current && !item.archived);
     if (selectedSession) {
       if (draftRef.current === savedDraftRef.current && selectedSession.draft !== savedDraftRef.current) {
@@ -380,7 +390,7 @@ export function Workspace(): React.JSX.Element {
       const apiKey = credentials.orcarouter_api_key;
       const catalog = models.find(model => model.id === session.config.model);
       session.config = { ...session.config, contextLength: catalog?.contextLength, supportsVision: catalog?.supportsVision, supportsTools: catalog?.supportsTools };
-      await runNative(session, text, context, apiKey, false, { onControl: control => { run.control = control; } });
+      await runAgent(session, text, context, apiKey, { onControl: control => { run.control = control; } });
       await update(session.id, item => { checkLiveRun(item, run); item.activeRun = undefined; for (const message of item.queuedMessages ?? []) if (message.delivery === "sending") message.delivery = "uncertain"; for (const entry of item.entries) if (entry.status === "running") entry.status = entry.kind === "tool" ? "interrupted" : "completed"; });
       completed = true;
     } catch (error) {
@@ -425,8 +435,8 @@ export function Workspace(): React.JSX.Element {
   const submit = async (value = draft, immediately = false) => {
     if (!current || !ready || !value.trim() || sendingRef.current) return;
     if (value.trim().length > 50_000) { setNotice(s("messageTooLong")); return; }
-    if (!auth?.runtimeV2) { setNotice(s("bridgeRequired")); return; }
-    if (current.config.engine === "builtin" && !auth?.connected) { setNotice(s("connectRequired")); return; }
+    if (requiresBridge(current.config) && !auth?.runtimeV2) { setNotice(s("bridgeRequired")); return; }
+    if (current.config.engine === "builtin" && !auth?.connected) { setNotice({ kind: "connectionRequired" }); return; }
     const sessionId = current.id;
     sendingRef.current = true; setSending(true);
     let queuedId: string | undefined;
@@ -487,30 +497,17 @@ export function Workspace(): React.JSX.Element {
     finally { setChangingPermission(false); }
   };
   const openConfig = () => { if (!current) return; setConfig({ ...current.config }); setConfigOpen(true); };
-  const loadModels = async () => {
-    if (config.engine === "builtin") return;
-    setLoadingModels(true); setEngineModels([]);
-    modelRequest.current?.abort();
-    const controller = new AbortController(); modelRequest.current = controller;
-    const timer = setTimeout(() => controller.abort(), 45_000);
-    try { const models = await nativeModels(config, controller.signal); if (!controller.signal.aborted) setEngineModels(models); }
-    catch { if (!controller.signal.aborted) setNotice(s("modelFailure")); }
-    finally { clearTimeout(timer); if (modelRequest.current === controller) setLoadingModels(false); }
-  };
-  useEffect(() => {
-    if (configOpen && config.engine === "codex" && auth?.runtimeV2) void loadModels();
-    return () => modelRequest.current?.abort();
-  }, [configOpen, config.engine, config.workspace, auth?.runtimeV2]);
   const persistConfig = async (next: AgentConfig) => {
-    if (!current || current.activeRun) return;
-      const changeEngine = current.config.engine !== next.engine || current.config.workspace !== next.workspace;
-      if (changeEngine && current.entries.length) {
-        await flushDraft();
-        const session = await store.fork(current.id, next);
-        replaceSession(session); await select(session);
-      } else await update(current.id, item => { item.config = { ...next }; });
+    if (!current) return;
+    if (current.activeRun) throw new Error(s("sessionBusy"));
+    next = configTransition(current.config, next);
+    const changeEngine = current.config.engine !== next.engine || current.config.location !== next.location || current.config.workspace !== next.workspace;
+    if (changeEngine && current.entries.length) {
+      await flushDraft();
+      const session = await store.fork(current.id, next);
+      replaceSession(session); await select(session);
+    } else await update(current.id, item => { item.config = { ...next }; });
   };
-  const saveConfig = async () => { try { await persistConfig(config); setConfigOpen(false); } catch (error) { fail(error); } };
   const recover = async () => {
     if (!current) return;
     await recoverRun(store, await store.get(current.id), s("restartNotice"), await legacyOwnerIsGone());
@@ -539,12 +536,14 @@ export function Workspace(): React.JSX.Element {
     }
     if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void submit(draft, event.ctrlKey || event.metaKey); }
   };
-  const authAction = async (type: "auth:connect" | "auth:key" | "auth:disconnect" | "auth:verify", key?: string): Promise<boolean> => {
+  const authAction = async (type: "auth:connect" | "auth:disconnect" | "auth:verify"): Promise<boolean> => {
     setBusy(true); setAuthError(""); setAuthSuccess(false);
     try {
-      const result = await message(type === "auth:key" ? { type, key: key ?? "" } : { type });
+      const result = await message({ type });
       setAuth(type === "auth:verify" ? await message({ type: "auth:status" }) : result);
-      setAuthSuccess(type !== "auth:disconnect"); return true;
+      setAuthSuccess(type !== "auth:disconnect");
+      if (type !== "auth:disconnect") setNotice(previous => typeof previous === "string" ? previous : "");
+      return true;
     }
     catch (error) { setAuthError(connectionError(error, language)); return false; }
     finally { setBusy(false); }
@@ -564,31 +563,40 @@ export function Workspace(): React.JSX.Element {
     catch (error) { fail(error); }
     finally { setOpeningPage(false); }
   };
-  const header = <header className="ws-header"><div className="ws-header-left"><Tooltip title={s("sessions")}><Button type="text" icon={<MenuOutlined />} aria-label={s("sessions")} aria-expanded={sessionOpen} onClick={() => setSessionOpen(true)} /></Tooltip><AgentAvatar engine={current?.config.engine} /><strong title={current?.title}>{current?.title || "WebAgentMate"}</strong></div><Space size={0}>{!pageMode && <Tooltip title={s("openInPage")}><Button type="text" icon={<ExportOutlined />} aria-label={s("openInPage")} disabled={!ready} loading={openingPage} onClick={() => void openPage()} /></Tooltip>}<Tooltip title={t("newConversation")}><Button type="text" icon={<PlusOutlined />} aria-label={t("newConversation")} onClick={() => void create().catch(fail)} /></Tooltip><Tooltip title={t("settings")}><Button type="text" icon={<SettingOutlined />} aria-label={t("settings")} onClick={() => setSettings(true)} /></Tooltip></Space></header>;
+  const header = <header className="ws-header"><div className="ws-header-left"><Tooltip title={s("sessions")}><Button type="text" icon={<MenuOutlined />} aria-label={s("sessions")} aria-expanded={sessionOpen} onClick={() => setSessionOpen(true)} /></Tooltip><AgentAvatar engine={current?.config.engine} /><strong title={current?.title}>{current?.title || "WebAgentMate"}</strong></div><Space size={0}>{!pageMode && <Tooltip title={s("openInPage")}><Button type="text" icon={<ExportOutlined />} aria-label={s("openInPage")} disabled={!ready} loading={openingPage} onClick={() => void openPage()} /></Tooltip>}<Tooltip title={t("newConversation")}><Button type="text" icon={<PlusOutlined />} aria-label={t("newConversation")} onClick={() => void create().catch(fail)} /></Tooltip><Tooltip title={t("settings")}><Button ref={settingsButton} type="text" icon={<SettingOutlined />} aria-label={t("settings")} onClick={() => openSettings()} /></Tooltip></Space></header>;
 
   return <ConfigProvider locale={{ en: enUS, zh_CN: zhCN, zh_TW: zhTW, ja: jaJP, de: deDE, pt_BR: ptBR }[language]} theme={componentTheme}>
-    <div className={`ws-shell${pageMode ? " ws-page" : ""}`}>
+    <div className={`ws-shell${pageMode ? " ws-page" : ""}${settings ? " ws-settings-open" : ""}`}>
     {settings ? <>
-      <header className="ws-header"><Button type="text" icon={<ArrowLeftOutlined />} onClick={() => setSettings(false)}>{t("back")}</Button><strong>{t("settings")}</strong><Button type="text" icon={<ReloadOutlined />} loading={busy} aria-label={t("refresh")} onClick={() => void refresh()} /></header>
-      <main className="ws-settings">
-        <Segmented block value={about ? "about" : "settings"} options={[{ value: "settings", label: t("settings") }, { value: "about", label: t("about") }]} onChange={value => setAbout(value === "about")} />
-        {about ? <section className="ws-about"><AgentAvatar size={56} /><h2>WebAgentMate</h2><p>{t("version")} {chrome.runtime.getManifest().version}</p><p>{s("nativeHint")}</p></section> : <>
-          {authError && <Alert showIcon closable type="error" message={authError} onClose={() => setAuthError("")} />}
-          {authSuccess && <Alert showIcon closable type="success" message={s("connectionSaved")} onClose={() => setAuthSuccess(false)} />}
-          <ConnectionPanel auth={auth} adapters={adapters} busy={busy} onAction={authAction} s={s} labels={{ connect: t("connectOrca"), verify: t("verify"), disconnect: t("disconnect"), connected: t("connected"), notConnected: t("notConnected"), ready: t("ready"), unavailable: t("unavailable") }} />
-          <section className="ws-appearance"><h2>{t("appearance")}</h2><Form layout="vertical" component={false}>
-            <Form.Item label={t("language")}><Select aria-label={t("language")} value={preference} options={LANGUAGE_OPTIONS.map(option => ({ value: option.value, label: option.label }))} onChange={value => { setPreference(value); void chrome.storage.local.set({ language_preference: value }); }} /></Form.Item>
-            <Form.Item label={t("theme")}><Segmented block value={theme} options={[{ value: "system", label: t("themeSystem") }, { value: "light", label: t("themeLight") }, { value: "dark", label: t("themeDark") }]} onChange={value => { setTheme(value); void chrome.storage.local.set({ theme_preference: value }); }} /></Form.Item>
-          </Form></section>
-        </>}
-      </main>
+      <header className="ws-settings-header"><div><SettingOutlined aria-hidden="true" /><h1 ref={settingsTitle} tabIndex={-1} className="ws-settings-title">{t("settings")}</h1></div><Space size={2}>
+        <Tooltip title={t("refresh")}><Button type="text" size="small" icon={<ReloadOutlined aria-hidden="true" />} loading={busy} aria-label={t("refresh")} onClick={() => void refresh()} /></Tooltip>
+        <Tooltip title={t("back")}><Button type="text" size="small" icon={<CloseOutlined aria-hidden="true" />} aria-label={t("back")} onClick={closeSettings} /></Tooltip>
+      </Space></header>
+        <SettingsSections activeKey={settingsTab} onChange={setSettingsTab} label={t("settingsNavigation")} items={[
+          { key: "models", label: s("settingsModels"), icon: <CloudOutlined aria-hidden="true" />, children: <>
+            {authError && <Alert showIcon closable type="error" message={authError} onClose={() => setAuthError("")} />}
+            {authSuccess && <Alert showIcon closable type="success" message={s("connectionSaved")} onClose={() => setAuthSuccess(false)} />}
+            <ConnectionPanel auth={auth} busy={busy} onAction={authAction} s={s} labels={{ connect: t("connectOrca"), affiliateDisclosure: t("orcaAffiliateDisclosure"), verify: t("verify"), disconnect: t("disconnect"), connected: t("connected"), notConnected: t("notConnected") }} />
+          </> },
+          { key: "local", label: s("settingsLocal"), icon: <CodeOutlined aria-hidden="true" />, children: <LocalConnectionPanel language={language} auth={auth} adapters={adapters} onCheckBridge={checkBridge} s={s} labels={{ ready: t("ready"), unavailable: t("unavailable") }} /> },
+          { key: "general", label: s("settingsGeneral"), icon: <SettingOutlined aria-hidden="true" />, children: <div className="ws-settings-card ws-appearance">
+            <div className="ws-settings-row"><label htmlFor="settings-language">{t("language")}</label><Select id="settings-language" value={preference} options={LANGUAGE_OPTIONS.map(option => ({ value: option.value, label: option.label }))} onChange={value => { setPreference(value); void chrome.storage.local.set({ language_preference: value }); }} /></div>
+            <div className="ws-settings-row"><span id="settings-theme-label">{t("theme")}</span><Segmented block aria-labelledby="settings-theme-label" value={theme} options={[{ value: "system", label: t("themeSystem") }, { value: "light", label: t("themeLight") }, { value: "dark", label: t("themeDark") }]} onChange={value => { setTheme(value); void chrome.storage.local.set({ theme_preference: value }); }} /></div>
+          </div> },
+          { key: "about", label: t("about"), icon: <InfoCircleOutlined aria-hidden="true" />, children: <>
+            <section className="ws-about"><div className="ws-about-heading"><AgentAvatar size={38} /><div><h3>WebAgentMate</h3><small>{t("version")} {chrome.runtime.getManifest().version}</small></div></div><p>{t("aboutDescription")}</p>
+              <Space wrap><Typography.Link href="https://github.com/wintc23/web-agent-mate" target="_blank" rel="noopener noreferrer">{s("projectLink")}</Typography.Link><Typography.Link href="https://github.com/wintc23/web-agent-mate/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer">{s("privacyLink")}</Typography.Link></Space>
+            </section>
+            <section className="ws-settings-card ws-settings-privacy"><h3>{t("privacyTitle")}</h3><p>{t("privacyCopy")}</p></section>
+          </> }
+        ]} />
     </> : <>
       {header}
       <main className="ws-stream" ref={stream} onScroll={() => { const el = stream.current!; setIsAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 80); }} aria-label={t("conversation")}>
         {!current?.entries.length && <div className="ws-welcome"><AgentAvatar engine={current?.config.engine} size={52} /><h1>{t("welcomeTitle")}</h1><p>{t("welcomeBody")}</p></div>}
         {current?.entries.map(entry => {
           const issue = entry.kind === "notice" ? entry.providerIssue ?? readProviderIssue(entry.text) : undefined;
-          return issue ? <ProviderNotice key={entry.id} issue={issue} language={language} actionable={current.entries.at(-1)?.id === entry.id && !current.activeRun && !active && !sending} onRetry={() => void submit(s("continue"))} onModel={openConfig} onConnection={() => setSettings(true)} onShorter={() => void create().catch(fail)} /> : <Message key={entry.id} entry={entry} engine={current.config.engine} detailsLabel={s("tools")} downloadLabel={s("artifact")} codexLabel={name => ["plan", "fileDiff", "reasoningSummary", "contextCompaction", "nativeSettings"].includes(name) ? c(name as Parameters<typeof c>[0]) : name} />;
+          return issue ? <ProviderNotice key={entry.id} issue={issue} language={language} actionable={current.entries.at(-1)?.id === entry.id && !current.activeRun && !active && !sending} onRetry={() => void submit(s("continue"))} onModel={openConfig} onConnection={() => openSettings("models")} onShorter={() => void create().catch(fail)} /> : <Message key={entry.id} entry={entry} engine={current.config.engine} detailsLabel={s("tools")} downloadLabel={s("artifact")} codexLabel={name => ["plan", "fileDiff", "reasoningSummary", "contextCompaction", "nativeSettings"].includes(name) ? c(name as Parameters<typeof c>[0]) : name} />;
         })}
         {current?.activeRun && active !== current.id && <Alert type="info" showIcon message={s(current.activeRun.coordinated ? "sessionSynced" : "checkingRun")} />}
         {(current?.activeRun || active === current?.id) && current && !request && <div className="ws-working" role="status"><AgentAvatar engine={current.config.engine} size={26} /><LoadingOutlined /> {current.activeRun?.stopRequested ? s("stopping") : current.activeRun?.phase ? phaseText(language, current.activeRun.phase) : s("running")}</div>}
@@ -599,7 +607,8 @@ export function Workspace(): React.JSX.Element {
       <footer className="ws-composer-dock">
         {current?.config.engine === "codex" && current.codexUsage && <small className="ws-codex-usage">{c("usage")}: {current.codexUsage.total.totalTokens.toLocaleString()} · {c("context")}: {current.codexUsage.last.totalTokens.toLocaleString()}{current.codexUsage.modelContextWindow ? ` / ${current.codexUsage.modelContextWindow.toLocaleString()}` : ""}</small>}
         {!isAtBottom && <Button className="ws-latest" size="small" onClick={() => { setIsAtBottom(true); stream.current?.scrollTo({ top: stream.current.scrollHeight }); }}>{t("backToLatest")} ↓</Button>}
-        {notice && <Alert className="ws-composer-notice" role="status" type="info" showIcon closable message={notice} onClose={() => setNotice("")} />}
+        {notice && <Alert className="ws-composer-notice" role="status" type="info" showIcon closable message={typeof notice === "string" ? notice : <>{connectionBefore}<button type="button" className="ws-inline-settings" onClick={() => openSettings("models")}>{t("settings")}</button>{connectionAfter}</>} onClose={() => setNotice("")} />}
+        {current && requiresBridge(current.config) && !auth?.runtimeV2 && <div className="ws-composer-notice"><BridgeSetup s={s} language={language} onCheck={checkBridge} /></div>}
         {active && active !== selected && <Button type="text" block onClick={() => { const session = sessions.find(item => item.id === active); if (session) void select(session); }}>{s("workingElsewhere")} ↗</Button>}
         {queuedMessages.length > 0 && <section className="ws-queue" aria-label={s("queuedMessages")}>
           <div className="ws-queue-heading"><strong>{s("queuedMessages")} · {queuedMessages.length}</strong><span>{current?.activeRun ? s("queueHint") : s("queuePaused")}</span></div>
@@ -612,12 +621,11 @@ export function Workspace(): React.JSX.Element {
         <form className="ws-composer" onSubmit={event => { event.preventDefault(); void submit(); }}>
           <Input.TextArea ref={textarea} variant="borderless" aria-label={t("agentPlaceholder")} placeholder={t("agentPlaceholder")} value={draft} autoSize={{ minRows: 3, maxRows: 9 }} disabled={!ready} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => { setDraft(event.target.value); draftRef.current = event.target.value; setHistoryCursor(null); }} onKeyDown={onKey} />
           <div className="ws-composer-bottom"><div className="ws-composer-selectors"><Button type="text" size="small" className="ws-route" disabled={!current || Boolean(current.activeRun)} onClick={openConfig} title={t("switchModel")} icon={<CodeOutlined />}><span>{current?.config.engine === "builtin" ? current.config.model : current?.config.engine === "codex" ? "Codex" : "Claude"}</span><DownOutlined /></Button>
-          {current && <WorkspacePicker value={current.config.workspace} recent={recentWorkspaces} disabled={!!current.activeRun} available={!!auth?.runtimeV2} onChange={path => persistConfig({ ...current.config, workspace: path })} s={s} />}
-          <Dropdown trigger={["click"]} menu={{ selectable: true, selectedKeys: [permissionMode], items: [
+          {current && requiresBridge(current.config) && <WorkspacePicker value={current.config.workspace} recent={recentWorkspaces} disabled={!!current.activeRun} available={!!auth?.runtimeV2} onChange={path => persistConfig({ ...current.config, workspace: path })} s={s} />}
+          <Dropdown trigger={["click"]} open={permissionOpen} onOpenChange={setPermissionOpen} menu={{ selectable: true, selectedKeys: [permissionMode], items: [{ type: "group", label: s("permissionMode"), children: [
             { key: "ask", icon: <SafetyOutlined />, label: <div className="ws-permission-option"><strong>{s("permissionAsk")}</strong><small>{s("permissionAskHint")}</small></div> },
             { key: "auto", icon: <ThunderboltOutlined />, label: <div className="ws-permission-option"><strong>{s("permissionAuto")}</strong><small>{s("permissionAutoHint")}</small></div> }
-          ], onClick: ({ key }) => void changePermission(key as PermissionMode) }}><Button type="text" size="small" className={`ws-permission ${permissionMode === "auto" ? "is-auto" : ""}`} icon={permissionMode === "auto" ? <ThunderboltOutlined /> : <SafetyOutlined />} aria-label={`${s("permissionMode")}: ${s(permissionMode === "auto" ? "permissionAuto" : "permissionAsk")}`} title={s(permissionMode === "auto" ? "permissionAutoHint" : "permissionAskHint")} disabled={!current || changingPermission}>{s(permissionMode === "auto" ? "permissionAuto" : "permissionAsk")}<DownOutlined /></Button></Dropdown>
-          {current?.config.engine === "codex" && <Button type="text" size="small" disabled={!auth?.runtimeV2} onClick={() => setCodexOpen(true)}>{c("capabilities")}</Button>}
+          ] }], onClick: ({ key }) => { setPermissionOpen(false); void changePermission(key as PermissionMode); } }}><Button type="text" size="small" className={`ws-permission ${permissionMode === "auto" ? "is-auto" : ""}`} icon={<SafetyOutlined aria-hidden="true" />} aria-haspopup="menu" aria-expanded={permissionOpen} title={s(permissionMode === "auto" ? "permissionAutoHint" : "permissionAskHint")} disabled={!current || changingPermission}>{permissionButtonLabel}<DownOutlined aria-hidden="true" /></Button></Dropdown>
           </div><Space size={4}>
           {current?.config.engine === "codex" && current.activeRun?.nativeTurnId && <Tooltip title={c("steer")}><Button type="text" icon={<ArrowUpOutlined />} aria-label={c("steer")} disabled={!draft.trim() || sending || current.activeRun.stopRequested} onClick={() => void submit(draft, true)} /></Tooltip>}
           {(current?.activeRun || active === selected) && <Button htmlType="button" className="ws-stop" aria-label={t("cancelAgent")} title={t("cancelAgent")} icon={<StopOutlined />} disabled={current?.activeRun?.stopRequested} onClick={() => void stopCurrent().catch(fail)} />}
@@ -626,32 +634,33 @@ export function Workspace(): React.JSX.Element {
         </form><small className="ws-input-hint">{current?.activeRun && current.config.engine === "codex" ? c("steerHint") : s(current?.activeRun ? "queueInputHint" : "inputHint")}</small>
       </footer>
     </>}
-    <Drawer title={s("sessions")} placement="left" open={sessionOpen} onClose={() => setSessionOpen(false)} width="min(360px, calc(100vw - 28px))" rootClassName="ws-session-drawer" footer={<small>{s("noCredential")}</small>}>
-      <div className="ws-session-toolbar"><Button type="primary" block icon={<PlusOutlined />} disabled={managingSession} onClick={() => void manageSession(create)}>{t("newConversation")}</Button><Tooltip title={s("import")}><Button icon={<UploadOutlined />} aria-label={s("import")} disabled={managingSession} onClick={() => importInput.current?.click()} /></Tooltip></div>
-      <input ref={importInput} type="file" accept="application/json,.json" hidden aria-label={s("import")} onChange={(event: React.ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void manageSession(() => importSession(file)); }} />
+    <Drawer title={s("sessions")} placement="left" open={sessionOpen} onClose={() => setSessionOpen(false)} width="min(360px, calc(100vw - 28px))" rootClassName="ws-session-drawer">
+      <div className="ws-session-toolbar"><Button type="primary" block icon={<PlusOutlined />} disabled={managingSession} onClick={() => void manageSession(create)}>{t("newConversation")}</Button></div>
       <Input allowClear prefix={<SearchOutlined />} aria-label={s("search")} placeholder={s("search")} value={query} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)} />
       {sessionError && <Alert showIcon type="error" message={sessionError} />}
-      <div className="ws-session-list">{matchedSessions.length === 0 && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={s("empty")} />}{matchedSessions.map(session => <article key={session.id} className={selected === session.id ? "selected" : ""}>
+      {matchedSessions.length === 0 && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={s("empty")} />}
+      <ul className="ws-session-list">{matchedSessions.map(session => <li key={session.id} className={selected === session.id ? "selected" : ""}>
         <Button type="text" className="ws-session-select" aria-current={selected === session.id ? "true" : undefined} disabled={managingSession} onClick={() => void manageSession(async () => { await select(session); setSettings(false); })}>
-          <AgentAvatar engine={session.config.engine} size={27} /><span className="ws-session-description"><strong>{session.title || t("newConversation")}</strong><small>{session.config.engine === "builtin" ? session.config.model : session.config.engine} · {new Date(session.updatedAt).toLocaleDateString(language.replace("_", "-"))}{session.activeRun ? ` · ${s(session.activeRun.coordinated || Date.now() - session.activeRun.heartbeat < LEASE_MS ? "running" : "interrupted")}` : ""}</small>{session.parentSessionId && <small>{s("branch")}: {visible.find(parent => parent.id === session.parentSessionId)?.title || "—"}</small>}</span>
+          <AgentAvatar engine={session.config.engine} size={24} /><span className="ws-session-description"><span className="ws-session-title"><strong title={session.title || t("newConversation")}>{session.title || t("newConversation")}</strong>{session.parentSessionId && <Tooltip title={`${s("branch")}: ${visible.find(parent => parent.id === session.parentSessionId)?.title || "—"}`}><ForkOutlined aria-label={`${s("branch")}: ${visible.find(parent => parent.id === session.parentSessionId)?.title || "—"}`} /></Tooltip>}</span><small>{session.config.engine === "builtin" ? session.config.model : session.config.engine} · {new Date(session.updatedAt).toLocaleDateString(language.replace("_", "-"))}{session.activeRun ? ` · ${s(session.activeRun.coordinated || Date.now() - session.activeRun.heartbeat < LEASE_MS ? "running" : "interrupted")}` : ""}</small></span>
         </Button>
-        <Dropdown trigger={["click"]} menu={{ items: [{ key: "fork", label: s("fork"), icon: <ForkOutlined />, disabled: managingSession || !!(session.activeRun && (session.activeRun.coordinated || Date.now() - session.activeRun.heartbeat < LEASE_MS)) }, { key: "rename", label: s("rename"), icon: <EditOutlined /> }, { key: "export", label: s("export"), icon: <DownloadOutlined />, disabled: managingSession }, { type: "divider" }, { key: "remove", label: s("remove"), icon: <DeleteOutlined />, danger: true, disabled: !!(session.activeRun && (session.activeRun.coordinated || Date.now() - session.activeRun.heartbeat < LEASE_MS)) }], onClick: ({ key }) => { if (key === "fork") void manageSession(() => forkSession(session.id)); if (key === "export") void manageSession(() => exportSession(session.id)); if (key === "rename") { setRenameId(session.id); setTitle(session.title); setRenameOpen(true); } if (key === "remove") { setDeleteId(session.id); setDeleteOpen(true); } } }}><Button type="text" icon={<MoreOutlined />} aria-label={`${s("actions")} ${session.title || t("newConversation")}`} /></Dropdown>
-      </article>)}</div>
+        <Dropdown trigger={["click"]} menu={{ items: [{ key: "fork", label: s("fork"), icon: <ForkOutlined />, disabled: managingSession || !!(session.activeRun && (session.activeRun.coordinated || Date.now() - session.activeRun.heartbeat < LEASE_MS)) }, { key: "rename", label: s("rename"), icon: <EditOutlined /> }, { key: "export", label: s("export"), icon: <DownloadOutlined />, disabled: managingSession }, { type: "divider" }, { key: "remove", label: s("remove"), icon: <DeleteOutlined />, danger: true, disabled: !!(session.activeRun && (session.activeRun.coordinated || Date.now() - session.activeRun.heartbeat < LEASE_MS)) }], onClick: ({ key }) => { if (key === "fork") void manageSession(() => forkSession(session.id)); if (key === "export") void manageSession(() => exportSession(session.id)); if (key === "rename") { setRenameId(session.id); setTitle(session.title); setRenameOpen(true); } if (key === "remove") { setDeleteId(session.id); setDeleteOpen(true); } } }}><Button type="text" className="ws-session-more" icon={<MoreOutlined />} aria-label={`${s("actions")} ${session.title || t("newConversation")}`} /></Dropdown>
+      </li>)}</ul>
     </Drawer>
-    {current && <CodexManager open={codexOpen} onClose={() => setCodexOpen(false)} config={current.config} language={language} onImport={async thread => { await flushDraft(); const session = await store.create(undefined, codexThreadSeed(thread, current.config)); replaceSession(session); await select(session); }} onSkill={skill => { const value = `${draftRef.current}${draftRef.current ? "\n" : ""}$${skill.name} `; draftRef.current = value; setDraft(value); textarea.current?.focus(); }} />}
     <Modal title={s("rename")} open={renameOpen} onCancel={() => setRenameOpen(false)} onOk={() => void update(renameId, session => { session.title = title.trim(); }).then(() => setRenameOpen(false)).catch(fail)} okButtonProps={{ disabled: !title.trim() }} okText={s("save")} cancelText={s("cancel")} zIndex={1100} className="ws-modal"><Form layout="vertical" component={false}><Form.Item label={s("title")}><Input autoFocus aria-label={s("title")} maxLength={120} value={title} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTitle(event.target.value)} onPressEnter={() => { if (title.trim()) void update(renameId, session => { session.title = title.trim(); }).then(() => setRenameOpen(false)).catch(fail); }} /></Form.Item></Form></Modal>
     <Modal title={s("remove")} open={deleteOpen} onCancel={() => setDeleteOpen(false)} onOk={removeSession} okButtonProps={{ danger: true }} okText={s("remove")} cancelText={s("cancel")} zIndex={1100} className="ws-modal"><p>{s("deleteConfirm")}</p></Modal>
-    <Modal title={t("switchModel")} centered open={configOpen} onCancel={() => setConfigOpen(false)} onOk={saveConfig} okText={s("save")} cancelText={s("cancel")} okButtonProps={{ disabled: Boolean(current?.activeRun) || !Number.isInteger(config.maxSteps) || config.maxSteps < 1 || config.maxSteps > 100 }} className="ws-modal" width={440}>
-      <Form layout="vertical" component={false}>
-        <Form.Item label={s("engine")} htmlFor="agent-engine"><Select id="agent-engine" aria-label={s("engine")} value={config.engine} options={[{ value: "builtin", label: `${s("builtin")} · OrcaRouter` }, { value: "codex", label: "Codex" }, { value: "claude", label: "Claude Code" }]} onChange={value => { setEngineModels([]); setConfig({ ...config, engine: value, model: value === "builtin" ? "orcarouter/free" : "" }); }} /></Form.Item>
-        <Form.Item label={t("model")}>{config.engine === "builtin" ? <ModelPicker models={models} value={config.model} onChange={value => setConfig({ ...config, model: value })} s={s} freeLabel={t("freeModels")} paidLabel={t("paidModels")} label={t("model")} /> : <Space.Compact block><AutoComplete aria-label={t("model")} placeholder={s("defaultModel")} value={config.model} options={engineModels.map(model => ({ value: model.id, label: model.name }))} filterOption={(input, option) => String(option?.value).toLowerCase().includes(input.toLowerCase())} onChange={value => setConfig({ ...config, model: value, codex: config.codex ? { ...config.codex, effort: undefined, serviceTier: undefined } : undefined })} /><Button disabled={!auth?.runtimeV2} loading={loadingModels} aria-label={s("loadingModels")} icon={<ReloadOutlined />} onClick={() => void loadModels()} /></Space.Compact>}</Form.Item>
-        <Form.Item label={s("workspace")}><WorkspacePicker value={config.workspace} recent={recentWorkspaces} available={!!auth?.runtimeV2} disabled={false} onChange={async path => setConfig({ ...config, workspace: path })} s={s} /><small className="ws-path-preview">{config.workspace}</small></Form.Item>
-        {config.engine === "codex" && <CodexSettingsFields config={config} onChange={setConfig} models={engineModels} language={language} />}
-        {config.engine === "builtin" && <Form.Item label={s("limitToolCalls")} htmlFor="tool-limit-toggle" extra={<span id="tool-limit-help">{s("toolLimitHint")}</span>}><Space><Switch id="tool-limit-toggle" aria-label={s("limitToolCalls")} aria-describedby="tool-limit-help" checked={config.limitToolCalls === true} onChange={checked => setConfig({ ...config, limitToolCalls: checked })} /><span>{s(config.limitToolCalls ? "limited" : "unlimited")}</span></Space></Form.Item>}
-        {(config.engine === "claude" || config.engine === "builtin" && config.limitToolCalls === true) && <Form.Item label={config.engine === "claude" ? turnLimitText(language) : s("steps")} htmlFor="agent-step-limit"><InputNumber id="agent-step-limit" aria-label={config.engine === "claude" ? turnLimitText(language) : s("steps")} min={1} max={100} precision={0} value={config.maxSteps} onChange={value => setConfig({ ...config, maxSteps: value ?? 24 })} /></Form.Item>}
-      </Form>
-      <p className="ws-modal-hint">{s("localNotice")}</p>{!auth?.runtimeV2 && <Alert type="info" showIcon message={s("bridgeRequired")} />}{current?.entries.length ? <p className="ws-modal-hint">{s("branchNotice")}</p> : null}
-    </Modal>
+    <AgentConfigDialog open={configOpen} config={config} onChange={setConfig} onClose={() => setConfigOpen(false)} onSave={persistConfig}
+      language={language} models={models} recentWorkspaces={recentWorkspaces} bridgeReady={!!auth?.runtimeV2} checkBridge={checkBridge}
+      running={!!current?.activeRun} hasHistory={!!current?.entries.length}
+      onImport={async thread => {
+        await flushDraft();
+        const session = await store.create(undefined, codexThreadSeed(thread, config));
+        replaceSession(session); await select(session);
+      }}
+      onUseSkill={async skill => {
+        await persistConfig(config);
+        const value = `${draftRef.current}${draftRef.current ? "\n" : ""}$${skill.name} `;
+        draftRef.current = value; setDraft(value); await flushDraft();
+      }} />
     </div>
   </ConfigProvider>;
 }

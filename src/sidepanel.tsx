@@ -1190,6 +1190,8 @@ function SettingsScreen({
             </div>
             <p className="section-description">{statusCopy}</p>
 
+            {!status?.connected && <p id="legacy-orca-referral-disclosure" className="ws-affiliate-disclosure">{t("orcaAffiliateDisclosure")}</p>}
+
             <div className="source-row">
               <span className="source-icon"><CloudOutlined aria-hidden="true" /></span>
               <span className="source-copy">
@@ -1197,9 +1199,11 @@ function SettingsScreen({
                 <small>{status?.verified ? t("verified") : status?.connected ? t("unverified") : t("notConnected")}</small>
               </span>
               {!status?.connected ? (
-                <button className="row-action" type="button" disabled={busy} onClick={() => onConnectionAction("auth:connect")}>
-                  {t("connectOrca")}
-                </button>
+                <>
+                  <button className="row-action" type="button" disabled={busy} aria-describedby="legacy-orca-referral-disclosure" onClick={() => onConnectionAction("auth:connect")}>
+                    {t("connectOrca")}
+                  </button>
+                </>
               ) : !status.verified ? (
                 <button className="row-action" type="button" disabled={busy} onClick={() => onConnectionAction("auth:verify")}>
                   {t("verify")}
@@ -1210,7 +1214,7 @@ function SettingsScreen({
             <div className="source-row">
               <span className="source-icon"><CodeOutlined aria-hidden="true" /></span>
               <span className="source-copy">
-                <strong>Bridge</strong>
+                <strong>{t("connectionExperiment")}</strong>
                 <small>{status?.bridgeInstalled ? status.bridgeVersion : t("unavailable")}</small>
               </span>
               <span className={`inline-status ${status?.bridgeInstalled ? "status-ready" : "status-offline"}`}>

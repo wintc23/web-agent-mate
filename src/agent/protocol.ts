@@ -9,7 +9,8 @@ export interface CodexSettings {
   serviceTier?: string;
 }
 export interface AgentConfig {
-  // "remote" is accepted only as a legacy storage/import value, never for execution.
+  // "remote" is the persisted browser-only mode: the loop runs in the extension
+  // page and calls the model over HTTPS. Only "local" uses the native Bridge.
   location: "remote" | "local";
   engine: Engine;
   model: string;
@@ -23,11 +24,15 @@ export interface AgentConfig {
   permissionMode?: PermissionMode;
   codex?: CodexSettings;
 }
-export const DEFAULT_CONFIG: AgentConfig = { location: "local", engine: "builtin", model: "orcarouter/free", workspace: "", maxSteps: 24, limitToolCalls: false, permissionMode: "ask" };
-export function localConfig(config: AgentConfig): AgentConfig {
-  // Preserve model, history and optional budgets. New file/command capabilities
-  // require fresh approval instead of inheriting browser-only automatic approval.
-  return config.location === "remote" && config.engine === "builtin" ? { ...config, location: "local", permissionMode: "ask" } : config;
+export const DEFAULT_CONFIG: AgentConfig = { location: "remote", engine: "builtin", model: "orcarouter/free", workspace: "", maxSteps: 24, limitToolCalls: false, permissionMode: "ask" };
+export function requiresBridge(config: AgentConfig): boolean {
+  return config.location === "local" || config.engine !== "builtin";
+}
+export function configTransition(previous: AgentConfig, next: AgentConfig): AgentConfig {
+  // Browser-only automatic approval must not grant newly enabled local tools.
+  const config = !requiresBridge(previous) && requiresBridge(next) ? { ...next, permissionMode: "ask" as const } : { ...next };
+  assertConfig(config);
+  return config;
 }
 export function builtinStepLimit(config: AgentConfig): number | undefined {
   return config.limitToolCalls === true ? config.maxSteps : undefined;
@@ -60,6 +65,7 @@ export interface Session {
   title: string;
   createdAt: number;
   updatedAt: number;
+  revision?: number;
   config: AgentConfig;
   entries: Entry[];
   history: WireMessage[];
@@ -94,7 +100,7 @@ export interface RunContext {
 }
 export function assertConfig(config: AgentConfig): void {
   if (!config || !["local", "remote"].includes(config.location) || !["builtin", "codex", "claude"].includes(config.engine)) throw new Error("INVALID_CONFIG");
-  if (config.location !== "local") throw new Error("LOCAL_ENGINE_REQUIRES_BRIDGE");
+  if (config.location !== "local" && config.engine !== "builtin") throw new Error("LOCAL_ENGINE_REQUIRES_BRIDGE");
   if (!Number.isInteger(config.maxSteps) || config.maxSteps < 1 || config.maxSteps > 100) throw new Error("INVALID_STEP_LIMIT");
   if (config.limitToolCalls !== undefined && typeof config.limitToolCalls !== "boolean") throw new Error("INVALID_STEP_LIMIT");
   if (config.permissionMode !== undefined && !["ask", "auto"].includes(config.permissionMode)) throw new Error("INVALID_PERMISSION_MODE");

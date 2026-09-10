@@ -9,20 +9,24 @@
   },
   "artifacts": {
     "macos-x64": {
-      "file": "webagentmate-bridge-macos-x64.tar.gz",
+      "file": "webagentmate-bridge-macos-x64.dmg",
       "sha256": "{{MACOS_X64_SHA256}}"
     },
     "macos-arm64": {
-      "file": "webagentmate-bridge-macos-arm64.tar.gz",
+      "file": "webagentmate-bridge-macos-arm64.dmg",
       "sha256": "{{MACOS_ARM64_SHA256}}"
     },
     "windows-x64": {
-      "file": "webagentmate-bridge-windows-x64.zip",
+      "file": "webagentmate-bridge-windows-x64.exe",
       "sha256": "{{WINDOWS_X64_SHA256}}"
     },
-    "linux-x64": {
-      "file": "webagentmate-bridge-linux-x64.tar.gz",
-      "sha256": "{{LINUX_X64_SHA256}}"
+    "linux-deb": {
+      "file": "webagentmate-bridge-linux-x64.deb",
+      "sha256": "{{LINUX_DEB_SHA256}}"
+    },
+    "linux-rpm": {
+      "file": "webagentmate-bridge-linux-x64.rpm",
+      "sha256": "{{LINUX_RPM_SHA256}}"
     }
   }
 }

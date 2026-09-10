@@ -32,3 +32,13 @@ Verified against the installed **Codex CLI 0.153.4** and its generated App Serve
 - Actual extension UI with Native Messaging for model metadata, Skills/MCP discovery and history import; two browser windows with controlled native events for cross-window steer/MCP forms and interruption recovery.
 
 References: [Codex App Server](https://learn.chatgpt.com/docs/app-server), and `codex app-server generate-ts --experimental` from the installed version. Runtime adapter: `bridge/runtime/codex.ts`.
+
+## Configuration UI modules
+
+The composer’s engine control opens one dialog. Choosing Codex reveals Configuration, Skills, MCP and History. Configuration groups execution parameters separately from tool permissions. Switching tabs keeps pending conversation settings; closing discards them. Skill switches and MCP sign-in update local Codex immediately, as described beside those controls. Save and use skill applies the selected conversation configuration before inserting the skill. History import uses the selected Codex options and the source thread’s directory to create an independent conversation.
+
+- `src/agent-config-dialog.tsx`: engine selection, dialog navigation, model catalogs and save/error state.
+- `src/codex-settings.tsx`: Codex execution parameters and native tool permissions.
+- `src/codex-capabilities.tsx`: skills, MCP and history requests; requests are cancelled when leaving their view.
+- `src/elicitation-form.tsx`: MCP forms shared by capability management and active conversations.
+- `src/Workspace.tsx`: conversation persistence, branching, history import and draft insertion.

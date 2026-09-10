@@ -37,6 +37,7 @@ fi
 mkdir -p "$binary_dir/runtime"
 install -m 644 "$runtime_source" "$binary_dir/runtime/agent.mjs"
 if [[ -d "$(dirname "$runtime_source")/licenses" ]]; then cp -R "$(dirname "$runtime_source")/licenses" "$binary_dir/runtime/"; fi
+if [[ -d "$(dirname "$runtime_source")/node" ]]; then cp -R "$(dirname "$runtime_source")/node" "$binary_dir/runtime/"; fi
 
 temporary="$(mktemp "$manifest_dir/ai.webagentmate.bridge.XXXXXX")"
 printf '{\n  "name": "ai.webagentmate.bridge",\n  "description": "WebAgentMate native bridge",\n  "path": "%s",\n  "type": "stdio",\n  "allowed_origins": ["chrome-extension://%s/"]\n}\n' \

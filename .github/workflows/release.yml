@@ -32,24 +32,32 @@ jobs:
       matrix:
         include:
           - os: macos-15-intel
+            platform: darwin
+            arch: x64
             artifact: webagentmate-bridge-macos-x64
             target: x86_64-apple-darwin
             binary: bridge/target/x86_64-apple-darwin/release/webagentmate-bridge
             installer: scripts/install-native-host-macos.sh
             uninstaller: scripts/uninstall-native-host-macos.sh
           - os: macos-15
+            platform: darwin
+            arch: arm64
             artifact: webagentmate-bridge-macos-arm64
             target: aarch64-apple-darwin
             binary: bridge/target/aarch64-apple-darwin/release/webagentmate-bridge
             installer: scripts/install-native-host-macos.sh
             uninstaller: scripts/uninstall-native-host-macos.sh
           - os: windows-latest
+            platform: win32
+            arch: x64
             artifact: webagentmate-bridge-windows-x64
             target: x86_64-pc-windows-msvc
             binary: bridge/target/x86_64-pc-windows-msvc/release/webagentmate-bridge.exe
             installer: scripts/install-native-host-windows.ps1
             uninstaller: scripts/uninstall-native-host-windows.ps1
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
+            platform: linux
+            arch: x64
             artifact: webagentmate-bridge-linux-x64
             target: x86_64-unknown-linux-gnu
             binary: bridge/target/x86_64-unknown-linux-gnu/release/webagentmate-bridge
@@ -71,31 +79,110 @@ jobs:
       - run: cargo fmt --manifest-path bridge/Cargo.toml -- --check
       - run: cargo test --manifest-path bridge/Cargo.toml --release --target ${{ matrix.target }}
       - run: cargo build --manifest-path bridge/Cargo.toml --release --target ${{ matrix.target }}
+      - run: node scripts/installer/prepare.cjs --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --binary ${{ matrix.binary }} --out build/installer-payload
+      - run: node scripts/installer/verify-payload.cjs build/installer-payload
+      - name: Prepare macOS signing
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          WAM_MAC_CERTIFICATE: ${{ secrets.WAM_MAC_CERTIFICATE }}
+          WAM_MAC_CERTIFICATE_PASSWORD: ${{ secrets.WAM_MAC_CERTIFICATE_PASSWORD }}
+          WAM_APPLE_ID: ${{ secrets.WAM_APPLE_ID }}
+          WAM_APPLE_TEAM_ID: ${{ secrets.WAM_APPLE_TEAM_ID }}
+          WAM_APPLE_APP_PASSWORD: ${{ secrets.WAM_APPLE_APP_PASSWORD }}
+        run: |
+          if [[ -n "$WAM_MAC_CERTIFICATE" ]]; then
+            certificate="$RUNNER_TEMP/webmate-signing.p12"
+            signing_keychain="$RUNNER_TEMP/webmate-signing.keychain-db"
+            signing_password="$(openssl rand -base64 24)"
+            printf '%s' "$WAM_MAC_CERTIFICATE" | base64 -D > "$certificate"
+            security create-keychain -p "$signing_password" "$signing_keychain"
+            security set-keychain-settings -lut 21600 "$signing_keychain"
+            security unlock-keychain -p "$signing_password" "$signing_keychain"
+            security import "$certificate" -P "$WAM_MAC_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$signing_keychain"
+            security set-key-partition-list -S apple-tool:,apple: -k "$signing_password" "$signing_keychain" > /dev/null
+            security list-keychains -d user -s "$signing_keychain" "$HOME/Library/Keychains/login.keychain-db"
+            if [[ -n "$WAM_APPLE_ID" && -n "$WAM_APPLE_TEAM_ID" && -n "$WAM_APPLE_APP_PASSWORD" ]]; then
+              xcrun notarytool store-credentials webmate --apple-id "$WAM_APPLE_ID" --team-id "$WAM_APPLE_TEAM_ID" --password "$WAM_APPLE_APP_PASSWORD"
+              echo "WAM_NOTARY_PROFILE=webmate" >> "$GITHUB_ENV"
+            fi
+          fi
+      - name: Build macOS DMG
+        if: runner.os == 'macOS'
+        env:
+          WAM_MAC_SIGN_IDENTITY: ${{ secrets.WAM_MAC_SIGN_IDENTITY }}
+        run: node scripts/installer/macos.cjs build/installer-payload
+      - name: Verify macOS installation and upgrade
+        if: runner.os == 'macOS'
+        run: node scripts/installer/verify-install.cjs 'build/installers/macos-${{ matrix.arch }}/image/WebAgentMate Connector.app/Contents/Resources/bridge'
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WAM_WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WAM_WINDOWS_CERTIFICATE_BASE64 }}
+          WAM_WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WAM_WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          choco install nsis --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'NSIS installation failed' }
+          if ($env:WAM_WINDOWS_CERTIFICATE_BASE64) {
+            $env:WAM_WINDOWS_CERTIFICATE = Join-Path $env:RUNNER_TEMP 'webmate-signing.pfx'
+            [IO.File]::WriteAllBytes($env:WAM_WINDOWS_CERTIFICATE, [Convert]::FromBase64String($env:WAM_WINDOWS_CERTIFICATE_BASE64))
+            $env:WAM_SIGNTOOL = (Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1).FullName
+          }
+          node scripts/installer/windows.cjs build/installer-payload
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+          $setup = Start-Process -FilePath release/artifacts/webagentmate-bridge-windows-x64.exe -ArgumentList '/S' -Wait -PassThru
+          if ($setup.ExitCode -ne 0) { throw 'Silent install check failed' }
+          $installed = (Get-Content (Join-Path $env:LOCALAPPDATA 'WebAgentMate/ai.webagentmate.bridge.json') -Raw | ConvertFrom-Json).path
+          node scripts/installer/verify-payload.cjs (Split-Path $installed -Parent)
+          if ($LASTEXITCODE -ne 0) { throw 'Installed runtime check failed' }
+          $uninstall = Start-Process -FilePath (Join-Path $env:LOCALAPPDATA 'WebAgentMate/Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
+          if ($uninstall.ExitCode -ne 0) { throw 'Uninstall check failed' }
+          if (Test-Path 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\ai.webagentmate.bridge') { throw 'Uninstall left the native host registered' }
+      - name: Build Linux packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes rpm
+          node scripts/installer/linux.cjs build/installer-payload
+          dpkg-deb --info release/artifacts/webagentmate-bridge-linux-x64.deb
+          rpm --checksig release/artifacts/webagentmate-bridge-linux-x64.rpm
+          sudo dpkg --install release/artifacts/webagentmate-bridge-linux-x64.deb
+          node scripts/installer/verify-payload.cjs /opt/webagentmate-bridge
+          sudo dpkg --remove webagentmate-bridge
       - shell: pwsh
         run: |
           New-Item -ItemType Directory -Force package | Out-Null
-          New-Item -ItemType Directory -Force package/runtime | Out-Null
-          Copy-Item '${{ matrix.binary }}' package/
-          Copy-Item bridge/runtime-dist/* package/runtime/ -Recurse
+          Copy-Item build/installer-payload/* package/ -Recurse
           Copy-Item '${{ matrix.installer }}' package/
           Copy-Item '${{ matrix.uninstaller }}' package/
           Copy-Item LICENSE package/
-          Compress-Archive -Path package/* -DestinationPath '${{ matrix.artifact }}.zip'
+          Compress-Archive -Path package/* -DestinationPath 'release/artifacts/${{ matrix.artifact }}.zip'
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}.zip
+          path: release/artifacts/*
 
   publish:
     if: startsWith(github.ref, 'refs/tags/')
     needs: [extension, bridge]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/installer/check-release.cjs artifacts
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: artifacts/*.zip
+          files: |
+            artifacts/*.zip
+            artifacts/*.dmg
+            artifacts/*.exe
+            artifacts/*.deb
+            artifacts/*.rpm

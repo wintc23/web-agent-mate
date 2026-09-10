@@ -1,4 +1,4 @@
-import { assertConfig, localConfig, repairHistory, type AgentConfig, type Entry, type Session, type WireMessage } from "./protocol";
+import { assertConfig, repairHistory, type AgentConfig, type Entry, type Session, type WireMessage } from "./protocol";
 import { continuationHistory } from "./sessions";
 import { validateProviderIssue } from "./provider-error";
 
@@ -25,10 +25,8 @@ function configFrom(value: unknown): AgentConfig {
     const c = record(data.codex);
     config.codex = Object.fromEntries(["effort", "sandbox", "approvalPolicy", "mode", "serviceTier"].filter(key => c[key] !== undefined).map(key => [key, c[key]]));
   }
-  const migrated = localConfig(config);
-  // Validate the original approval value before migration resets browser-only auto approval.
-  try { assertConfig({ ...migrated, permissionMode: config.permissionMode }); } catch { return invalid(); }
-  return migrated;
+  try { assertConfig(config); } catch { return invalid(); }
+  return config;
 }
 function entryFrom(value: unknown): Entry {
   const data = record(value);

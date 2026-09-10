@@ -1,0 +1,38 @@
+const fs = require("node:fs");
+const path = require("node:path");
+const { execFileSync: exec } = require("node:child_process");
+const { manifest } = require("./setup.cjs");
+const root = path.resolve(__dirname, "../..");
+const payload = path.resolve(process.argv[2] || "build/installer-payload");
+const meta = JSON.parse(fs.readFileSync(path.join(payload, "bundle.json")));
+if (process.platform !== "linux" || meta.platform !== "linux" || meta.arch !== "x64") throw new Error("Linux x64 payload required");
+const build = path.join(root, "build/installers/linux-x64");
+fs.rmSync(build, { recursive: true, force: true });
+const staging = path.join(build, "root");
+const output = path.join(root, "release/artifacts");
+fs.mkdirSync(output, { recursive: true });
+fs.mkdirSync(path.join(staging, "opt"), { recursive: true });
+fs.cpSync(payload, path.join(staging, "opt/webagentmate-bridge"), { recursive: true });
+for (const directory of ["usr/share/applications", "usr/share/metainfo", "usr/share/icons/hicolor/128x128/apps"]) fs.mkdirSync(path.join(staging, directory), { recursive: true });
+fs.copyFileSync(path.join(root, "public/icons/icon-128.png"), path.join(staging, "usr/share/icons/hicolor/128x128/apps/webagentmate-bridge.png"));
+fs.writeFileSync(path.join(staging, "usr/share/applications/webagentmate-bridge.desktop"), `[Desktop Entry]\nType=Application\nName=WebAgentMate Connector\nComment=Connect your browser to local AI tools\nExec=google-chrome chrome-extension://${meta.extensionId}/sidepanel.html?view=page\nIcon=webagentmate-bridge\nTerminal=false\nCategories=Utility;\n`);
+fs.writeFileSync(path.join(staging, "usr/share/metainfo/ai.webagentmate.bridge.metainfo.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<component type="desktop-application"><id>ai.webagentmate.bridge</id><metadata_license>CC0-1.0</metadata_license><project_license>MIT</project_license><name>WebAgentMate Connector</name><summary>Connect your browser to local AI tools</summary><description><p>Connect WebAgentMate to local files, commands, Codex and Claude Code. Includes the runtime and starts on demand.</p></description><launchable type="desktop-id">webagentmate-bridge.desktop</launchable><url type="homepage">https://github.com/wintc23/web-agent-mate</url><content_rating type="oars-1.1"/></component>\n`);
+for (const directory of ["etc/opt/chrome/native-messaging-hosts", "etc/chromium/native-messaging-hosts"]) {
+  fs.mkdirSync(path.join(staging, directory), { recursive: true });
+  fs.writeFileSync(path.join(staging, directory, "ai.webagentmate.bridge.json"), manifest("/opt/webagentmate-bridge/webagentmate-bridge", meta.extensionId));
+}
+const migration = "/opt/webagentmate-bridge/runtime/node/bin/node /opt/webagentmate-bridge/setup.cjs";
+const deb = path.join(build, "deb");
+fs.cpSync(staging, deb, { recursive: true });
+fs.mkdirSync(path.join(deb, "DEBIAN"));
+fs.writeFileSync(path.join(deb, "DEBIAN/control"), `Package: webagentmate-bridge\nVersion: ${meta.version}\nSection: web\nPriority: optional\nArchitecture: amd64\nMaintainer: WebAgentMate contributors\nHomepage: https://github.com/wintc23/web-agent-mate\nDepends: libc6 (>= 2.35), libstdc++6, libgcc-s1, util-linux\nDescription: Connect WebAgentMate to local AI tools\n Includes a private runtime. No separate Node.js installation is required.\n`);
+fs.writeFileSync(path.join(deb, "DEBIAN/postinst"), `#!/bin/sh\nset -eu\nif [ "$1" = configure ]; then ${migration} migrate-users; fi\n`, { mode: 0o755 });
+fs.writeFileSync(path.join(deb, "DEBIAN/prerm"), `#!/bin/sh\nset -eu\nif [ "$1" = remove ]; then ${migration} remove-users; fi\n`, { mode: 0o755 });
+exec("dpkg-deb", ["--root-owner-group", "--build", deb, path.join(output, "webagentmate-bridge-linux-x64.deb")], { stdio: "inherit" });
+const rpm = path.join(build, "rpm");
+for (const dir of ["BUILD", "BUILDROOT", "RPMS", "SOURCES", "SPECS", "SRPMS"]) fs.mkdirSync(path.join(rpm, dir), { recursive: true });
+const quote = value => `'${value.replace(/'/g, "'\\''")}'`;
+const spec = path.join(rpm, "SPECS/webagentmate-bridge.spec");
+fs.writeFileSync(spec, `Name: webagentmate-bridge\nVersion: ${meta.version}\nRelease: 1\nSummary: Connect WebAgentMate to local AI tools\nLicense: MIT\nURL: https://github.com/wintc23/web-agent-mate\nBuildArch: x86_64\nAutoReqProv: no\nRequires: glibc >= 2.35, libstdc++, libgcc, util-linux\n%description\nIncludes a private runtime. No separate Node.js installation is required.\n%install\nmkdir -p %{buildroot}\ncp -a ${quote(staging)}/. %{buildroot}/\n%post\n${migration} migrate-users\n%preun\nif [ "$1" -eq 0 ]; then ${migration} remove-users; fi\n%files\n/opt/webagentmate-bridge\n/etc/opt/chrome/native-messaging-hosts/ai.webagentmate.bridge.json\n/etc/chromium/native-messaging-hosts/ai.webagentmate.bridge.json\n/usr/share/applications/webagentmate-bridge.desktop\n/usr/share/metainfo/ai.webagentmate.bridge.metainfo.xml\n/usr/share/icons/hicolor/128x128/apps/webagentmate-bridge.png\n`);
+exec("rpmbuild", ["-bb", spec, "--define", `_topdir ${rpm}`, "--define", "_build_id_links none", "--define", "debug_package %{nil}", "--define", "__os_install_post %{nil}"], { stdio: "inherit" });
+fs.copyFileSync(path.join(rpm, `RPMS/x86_64/webagentmate-bridge-${meta.version}-1.x86_64.rpm`), path.join(output, "webagentmate-bridge-linux-x64.rpm"));

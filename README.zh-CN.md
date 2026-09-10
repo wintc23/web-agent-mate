@@ -2,15 +2,19 @@
 
 [English](README.md) | 简体中文
 
+> **[注册 OrcaRouter（推广链接）](https://www.orcarouter.ai/register?ref=ref_22606f54f9038927f996)**
+>
+> 通过此链接或 WebAgentMate 的浏览器登录入口注册，后续符合条件的消费可能为开发者带来佣金。本项目不承诺推广奖励或额外免费额度，详见[隐私说明](PRIVACY.md)。
+
 [![CI](https://github.com/wintc23/web-agent-mate/actions/workflows/ci.yml/badge.svg)](https://github.com/wintc23/web-agent-mate/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **让每个网页都能连接你的 AI 智能体。**
 
 WebAgentMate 是一个开源 Chrome 助手，将本地 Codex、Claude Code 和基于 OrcaRouter 的内置智能体带到浏览器中。你可以在侧边栏或独立会话标签页里理解网页、总结翻译、执行浏览器任务，并结合本地文件完成工作。
 
-会话保存在当前设备。所有智能体任务都经由本地 Bridge 执行；所选引擎仍可能将任务内容发送给云端模型服务。
+会话保存在当前设备。内置智能体的网页任务直接在扩展内运行，无需安装额外的桌面软件。可选的连接助手提供本地文件、命令及原生 Codex / Claude 能力；所选引擎仍可能将任务内容发送给云端模型服务。
 
-**当前状态：** `main` 是 v0.6.0 开发源码，[GitHub Releases](https://github.com/wintc23/web-agent-mate/releases) 中的安装包可能落后于源码。体验本文功能时，请从同一份源码构建扩展和 Bridge。已完成验证及尚待真实模型验收的内容见[验收记录](docs/ACCEPTANCE-v0.6.md)。
+**当前状态：** `main` 是 v0.6.0 开发源码，[GitHub Releases](https://github.com/wintc23/web-agent-mate/releases) 中的安装包可能落后于源码。体验本文功能时，请从源码构建扩展；需要使用电脑中的文件或命令时，再从同一份源码构建连接助手。已完成验证及尚待真实模型验收的内容见[验收记录](docs/ACCEPTANCE-v0.6.md)。
 
 ## 可以做什么
 
@@ -18,9 +22,9 @@ WebAgentMate 是一个开源 Chrome 助手，将本地 Codex、Claude Code 和�
 - **执行浏览器任务：** 读取页面、导航、点击、填写、选择、滚动和截图，在会话中处理工具授权请求。
 - **结合本地工作：** 选择工作目录，让智能体读取、搜索、编辑文件，运行获准的命令，将网页信息整理成文档。
 - **切换智能体：** 在同一会话界面选择 Codex、Claude Code 或内置 OrcaRouter 智能体。
-- **管理长期会话：** 独立草稿、搜索、改名、分支、删除，以及 JSON 备份导入导出；关闭再打开后可恢复历史。
+- **管理长期会话：** 独立草稿、搜索、改名、分支、删除，以及 JSON 备份导出；关闭再打开后可恢复历史。
 - **使用更大工作区：** 将会话打开为独立标签页，同步侧栏与页面的草稿、进度、回复和停止操作。
-- **使用原生 Codex 能力：** 模型与推理档位、执行/计划模式、权限设置、运行中追加指令、原生历史导入、Skills 和 MCP。具体范围见 [Codex 兼容说明](docs/CODEX-COMPATIBILITY.md)。
+- **使用原生 Codex 能力：** 点击智能体选项中的 Codex，在同一窗口内切换「运行配置、技能、MCP、历史」。支持模型与推理档位、执行/计划模式、权限设置、运行中追加指令和原生历史导入。具体范围见 [Codex 兼容说明](docs/CODEX-COMPATIBILITY.md)。
 - **调整界面：** 跟随系统、浅色和深色主题；支持简体中文、繁体中文、英语、巴西葡萄牙语、日语和德语。
 
 例如，你可以发送：
@@ -35,19 +39,19 @@ WebAgentMate 是一个开源 Chrome 助手，将本地 Codex、Claude Code 和�
 | --- | --- | --- |
 | Codex | 本机 Codex App Server，使用其原生工具和配置 | 安装 Codex CLI 并完成认证 |
 | Claude Code | 通过 Claude Agent SDK 调用本机 Claude Code | 安装 Claude Code CLI 并完成认证 |
-| 内置智能体 | 在本地运行工具循环，通过 OrcaRouter 调用模型 | 在设置中登录 OrcaRouter 或填写 API Key |
+| 内置智能体 | 默认在扩展内运行工具循环，通过 OrcaRouter 调用模型；本机文件与命令为可选模式 | 在设置中通过浏览器登录 OrcaRouter |
 
-三种引擎都需要 **Bridge 和 Node.js 20+**。Codex、Claude 使用各自的认证；只有内置智能体需要连接 OrcaRouter。模型可用性、额度和费用取决于对应服务。
+内置智能体的网页任务只需扩展和 OrcaRouter 连接。开启**本机文件与命令**，或选择 Codex / Claude 时才需要安装连接助手。图形安装器内置运行环境，用户无需单独安装 Node.js。Codex、Claude 使用各自的认证；只有内置智能体需要连接 OrcaRouter。模型可用性、额度和费用取决于对应服务。
 
-没有 Bridge 时仍可查看和管理已有会话、草稿，但不能启动智能体任务。
+未安装连接助手时可以运行内置智能体的网页任务，以及查看和管理所有会话、草稿。设置页采用左侧纵向导航与右侧内容区，窄侧栏下导航显示图标并提供名称提示。设置分为“模型服务”“本地连接”“通用”和“关于”，分别管理模型连接、本机工具、语言与主题，以及版本与隐私说明。“设置 → 本地连接”提供“下载连接助手”“安装说明”和“重新检测”，选择本机能力而未连接时也会显示入口。详见[连接助手安装说明](docs/BRIDGE-INSTALL.md)。
 
 ## 从源码安装
 
 ### 1. 准备环境
 
-- Google Chrome，启用开发者模式以加载未打包扩展。
-- Node.js 20+ 和 npm；CI 使用 Node.js 22。
-- Rust stable 和 Cargo，用于构建 Bridge。Windows 还需 MSVC C++ 构建工具；macOS 需 Xcode Command Line Tools；Linux 需 C 编译器和链接器。
+- Google Chrome 116 或更新版本，启用开发者模式以加载未打包扩展。
+- 构建扩展需要 Node.js 20+ 和 npm；CI 使用 Node.js 22。加载构建好的扩展、运行网页任务的用户不需要安装 Node.js。
+- 仅构建可选 Bridge 时需要 Rust stable 和 Cargo。Windows 还需 MSVC C++ 构建工具；macOS 需 Xcode Command Line Tools；Linux 需 C 编译器和链接器。
 - 根据上表准备所选智能体的 CLI 或账号。
 
 ### 2. 构建并加载扩展
@@ -61,7 +65,7 @@ npm run build
 
 打开 `chrome://extensions`，启用**开发者模式**，点击**加载已解压的扩展程序**，选择刚生成的 `dist/` 目录，然后将 WebAgentMate 固定到工具栏。
 
-### 3. 构建并安装 Bridge
+### 3. 构建并安装连接助手（可选）
 
 在项目根目录执行与你的系统对应的命令。
 
@@ -87,46 +91,41 @@ cargo build --manifest-path bridge/Cargo.toml --release
 .\scripts\install-native-host-windows.ps1
 ```
 
-构建脚本会生成 Node runtime 和 Rust Bridge。安装器将它们复制到当前用户目录，并注册 `ai.webagentmate.bridge` Native Messaging 主机。安装后重启 Chrome 或重新加载扩展。
+构建脚本会生成连接助手所用的 Node runtime 和 Rust Bridge。安装器将它们复制到当前用户目录，并注册 `ai.webagentmate.bridge` Native Messaging 主机。安装后重启 Chrome 或重新加载扩展。
 
-仓库中的公开 manifest key 将默认扩展 ID 固定为 `lmlkkallnnjijicmfmfdelnamcnhflfg`，无需手动配对。如果 fork 修改了 key，请将 `chrome://extensions` 中显示的 ID 作为安装脚本的第一个参数传入；PowerShell 使用 `-ExtensionId`。manifest key 是公开身份信息，不是签名私钥。
+仓库中的公开 manifest key 将默认扩展 ID 固定为 `lmlkkallnnjijicmfmfdelnamcnhflfg`，无需手动配对。图形安装器在构建时根据 key 生成 ID，fork 修改 key 后需要重新构建安装器。使用开发安装脚本时，可将 `chrome://extensions` 中显示的 ID 作为第一个参数传入；PowerShell 使用 `-ExtensionId`。manifest key 是公开身份信息，不是签名私钥。
 
 ### 4. 开始第一段对话
 
 1. 打开普通 HTTP(S) 网页，点击工具栏中的 WebAgentMate 图标。
-2. 进入**设置**，检查 Bridge 连接；使用内置智能体时连接 OrcaRouter。
-3. 打开模型/智能体选择器，选择引擎和模型；涉及文件操作时选择工作目录。
+2. 进入**设置 → 模型服务**，连接 OrcaRouter 后即可运行网页任务。需要本机能力时再检查 Bridge 连接。
+3. 打开模型/智能体选择器，选择引擎和模型；涉及本机文件时开启“本机文件与命令”并选择工作目录。
 4. 输入“总结当前页面”，根据提示确认工具操作；需要中断时点击停止。
 5. 在**会话**中切换历史记录，或将当前会话打开到独立页面。
 
 ## 使用发布包安装
 
-从[同一个 GitHub Release](https://github.com/wintc23/web-agent-mate/releases) 下载扩展 ZIP 和对应系统的 Bridge ZIP，不要混用不同版本。扩展 ZIP 解压到固定目录后，通过 `chrome://extensions` 加载该目录。
+网页任务只需加载已发布的扩展包 `webagentmate-extension.zip`。需要使用电脑中的文件或命令时，打开**设置 → 本地连接 → 下载连接助手**，按钮会直接下载匹配扩展版本及当前系统的安装器；旁边的菜单可切换其他平台或 Linux 软件包格式。
 
-v0.6 的发布工作流会生成以下文件；请以实际 release 中列出的文件和版本为准：
-
-| 平台 | Bridge 文件 | 解压后运行 |
+| 平台 | 安装器 | 操作 |
 | --- | --- | --- |
-| macOS Apple Silicon | `webagentmate-bridge-macos-arm64.zip` | `./install-native-host-macos.sh` |
-| macOS Intel | `webagentmate-bridge-macos-x64.zip` | `./install-native-host-macos.sh` |
-| Windows x64 | `webagentmate-bridge-windows-x64.zip` | `.\install-native-host-windows.ps1` |
-| Linux x64 | `webagentmate-bridge-linux-x64.zip` | `./install-native-host-linux.sh` |
+| macOS Apple Silicon | `webagentmate-bridge-macos-arm64.dmg` | 打开 DMG，双击安装程序，点击安装 |
+| macOS Intel | `webagentmate-bridge-macos-x64.dmg` | 打开 DMG，双击安装程序，点击安装 |
+| Windows x64 | `webagentmate-bridge-windows-x64.exe` | 打开后按安装向导操作 |
+| Ubuntu / Debian x64 | `webagentmate-bridge-linux-x64.deb` | 用系统软件安装器打开并安装 |
+| Fedora x64 | `webagentmate-bridge-linux-x64.rpm` | 用系统软件安装器打开并安装 |
 
-扩展包名为 `webagentmate-extension.zip`。预编译 Bridge 仍需要本机安装 Node.js 20+；v0.6 Bridge 包中包含 `runtime/agent.mjs` 和依赖许可证声明，需完整解压。
+安装器内置 Node.js 和依赖许可证，用户不需要执行命令或单独安装 Node.js。安装完成后返回插件点击**重新检测**，Chrome 会按需启动连接助手。macOS 要求 13.5+；Linux 软件包面向 Ubuntu 22.04+、Debian 12+ 及兼容 glibc 2.35+ 的发行版。
 
-如果 macOS/Linux 解压后提示没有执行权限，在解压目录运行以下命令，再执行安装脚本：
-
-```bash
-chmod +x webagentmate-bridge install-native-host-*.sh uninstall-native-host-*.sh
-```
-
-这些包没有作为已签名安装器提供；未签名的 macOS 构建可能需要在系统设置中批准运行。
+上表是新版打包目标，不代表这些包已经发布。匹配安装包尚未发布时，插件会明确提示。旧 v0.2.x 安装包不含 v0.6 运行时。macOS 正式发布需 Developer ID 签名和公证，Windows 正式安装器需代码签名。开发构建与发布配置见[安装器开发说明](docs/INSTALLER-DEVELOPMENT.md)，用户操作见[安装说明](docs/BRIDGE-INSTALL.md)。
 
 ## 会话与长任务
 
-每个会话独立保存草稿、消息、工具记录、模型与工作目录。搜索支持标题、消息、模型和路径。分支会话会保留原会话；切换引擎或工作目录也会建立分支，避免混用执行上下文。
+在独立页面中再次点击 Chrome 工具栏里的插件图标，会在新标签页打开当前会话。原页面和任务继续保留。
 
-JSON 备份包含对话、草稿和工具内容，不包含应用连接设置或原生 session ID。导入会创建新会话，不会自动执行任务。备份上限为 10 MB；其中可能包含对话里已有的敏感内容。
+每个会话独立保存草稿、消息、工具记录、模型与工作目录。搜索支持标题、消息、模型和路径。分支会话会保留原会话；切换引擎、本机工具开关或工作目录也会建立分支，避免混用执行上下文。
+
+JSON 备份包含对话、草稿和工具内容，不包含应用连接设置或原生 session ID。会话操作菜单保留导出，列表不再提供导入备份入口。备份可能包含对话里已有的敏感内容。
 
 内置智能体默认不限制工具调用次数或任务总时长，可在会话配置中开启次数上限。连续工具失败或重复无进展的调用会暂停运行；单次模型请求仍有超时控制。
 
@@ -168,22 +167,22 @@ node scripts/smoke-runtime.cjs claude --turn
 
 当前真实模型验证的覆盖范围见[验收记录](docs/ACCEPTANCE-v0.6.md)。不要将模型目录可用视为推理认证成功。
 
-推送 `v*` 标签会构建扩展及 macOS x64/ARM64、Windows x64、Linux x64 Bridge ZIP，并附加到 GitHub Release。源码更新与发布安装包是独立步骤。
+推送 `v*` 标签会构建扩展、DMG/EXE/DEB/RPM 安装器及开发者 ZIP，并检查 macOS 签名/公证和 Windows 签名后发布。手动触发工作流只生成开发测试包，不发布。
 
 ## 常见问题
 
 | 问题 | 处理方式 |
 | --- | --- |
-| Bridge 未连接或找不到 native host | 运行对应系统的安装脚本，核对扩展 ID 和两端版本，然后重启 Chrome。 |
-| `NODE_20_REQUIRED` | 检查 `node --version`，确认 Node.js 20+ 安装在 Bridge 可发现的位置；仅在交互式 shell 中可见的版本可能无法被 Chrome 找到。 |
-| `RUNTIME_BUNDLE_MISSING` 或要求更新 Bridge | 源码安装需重新构建 runtime、Bridge 并运行安装器；发布包需完整解压，保留 `runtime/`。 |
+| 连接助手未连接或找不到 native host | 重新运行对应系统的安装器，核对扩展与连接助手版本，然后重启 Chrome。 |
+| `NODE_20_REQUIRED` | 图形安装请重新运行匹配版本的安装器，恢复内置运行环境；源码开发方式需要可被 Bridge 找到的 Node.js 20+。 |
+| `RUNTIME_BUNDLE_MISSING` 或要求更新 Bridge | 源码安装需重新构建 runtime、Bridge 并运行安装器；图形安装请重新运行匹配版本的安装器。 |
 | Codex / Claude 不可用 | 确认 CLI 已安装且可被 Chrome 启动的进程发现，并先在终端完成一次有效的已认证请求。 |
 | `CLAUDE_AUTH_REQUIRED` | 在终端运行 `claude auth login` 后重试。 |
 | 无法读取 `chrome://` 页面 | 切换到普通 HTTP(S) 页面；浏览器内部页面和文件 URL 不在工具支持范围内。 |
 | 关闭侧栏后任务停止 | 在独立会话页面发起后续任务，并保持发起任务的页面打开。 |
 | OrcaRouter 提示限流或额度错误 | 按界面提示重试、选择模型、检查连接或账户额度。模型目录可访问不代表具有推理额度。 |
 
-更新源码后，需要重新构建扩展和 Bridge、重新运行安装脚本，再重新加载扩展。卸载 Bridge 使用对应的 `scripts/uninstall-native-host-*` 脚本或发布包内的卸载脚本；扩展需在 Chrome 中单独移除。
+更新源码后，需要重新构建扩展和 Bridge、重新运行安装脚本，再重新加载扩展。图形安装可通过 macOS 安装器的卸载按钮、Windows 设置 → 应用或 Linux 软件管理器卸载；源码安装保留 `scripts/uninstall-native-host-*` 脚本；扩展需在 Chrome 中单独移除。
 
 ## 项目结构
 

@@ -12,6 +12,16 @@ fn bundle_path() -> Option<PathBuf> {
 }
 fn node_path() -> Option<PathBuf> {
     let mut paths = Vec::new();
+    // Release installers carry a private runtime; users do not install Node.
+    if let Ok(executable) = std::env::current_exe() {
+        if let Some(directory) = executable.parent() {
+            paths.push(directory.join(if cfg!(windows) {
+                "runtime/node/node.exe"
+            } else {
+                "runtime/node/bin/node"
+            }));
+        }
+    }
     if let Some(home) = std::env::var_os("HOME") {
         let home = PathBuf::from(home);
         paths.extend([home.join(".local/n/bin/node"), home.join(".local/bin/node")]);
@@ -54,7 +64,16 @@ pub fn serve(request: &Request, reader: &mut impl Read) -> BridgeResult<()> {
     let workspace = dirs.data_local_dir().join("workspace");
     fs::create_dir_all(&workspace).map_err(io_error)?;
     set_private_directory_permissions(&workspace)?;
-    let mut command = Command::new(node);
+    let mut command = Command::new(&node);
+    if let Some(directory) = node.parent() {
+        let mut paths = vec![directory.to_path_buf()];
+        paths.extend(std::env::split_paths(
+            &std::env::var_os("PATH").unwrap_or_default(),
+        ));
+        if let Ok(path) = std::env::join_paths(paths) {
+            command.env("PATH", path);
+        }
+    }
     command
         .arg(bundle)
         .env("WAM_WORKSPACE", &workspace)

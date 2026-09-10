@@ -1,4 +1,4 @@
-export function validateOrcaKey(value: unknown): string {
+function validateOrcaKey(value: unknown): string {
   if (typeof value !== "string" || !/^sk-orca-[A-Za-z0-9_-]+$/.test(value.trim()) || value.length > 1024) throw new Error("AUTH_KEY_INVALID");
   return value.trim();
 }

@@ -14,10 +14,12 @@ import type {
   RunPortRequest,
   RunPortResponse
 } from "./messages";
-import { parseOrcaCallback, orcaKeyFromExchange, validateOrcaKey } from "./orca-auth";
+import { parseOrcaCallback, orcaKeyFromExchange } from "./orca-auth";
 import { orcaFailure } from "./agent/provider-error";
+import { openFromToolbar } from "./agent/toolbar-action";
 
 const ORCA_AUTH_URL = "https://www.orcarouter.ai/auth";
+const ORCA_REFERRAL_CODE = "ref_22606f54f9038927f996";
 const ORCA_TOKEN_URL = "https://www.orcarouter.ai/api/v1/auth/keys";
 const ORCA_DISCOVERY_URL = "https://www.orcarouter.ai/.well-known/openid-configuration";
 const ORCA_MODELS_URL = "https://api.orcarouter.ai/v1/models";
@@ -54,8 +56,11 @@ interface AgentTaskState {
 const AGENT_TASK_STORAGE_PREFIX = "agent_task:";
 
 chrome.runtime.onInstalled.addListener(() => {
-  void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+  void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
   void restrictStorageAccess();
+});
+chrome.action.onClicked.addListener(tab => {
+  void openFromToolbar(tab).catch(error => console.error("Could not open WebAgentMate", error));
 });
 chrome.runtime.onStartup.addListener(() => void restrictStorageAccess());
 void restrictStorageAccess();
@@ -184,12 +189,6 @@ async function handleMessage(request: BackgroundRequest): Promise<BackgroundResp
     case "auth:connect":
       await connect();
       return { ok: true, data: await getStatus() };
-    case "auth:key": {
-      const key = validateOrcaKey(request.key);
-      await verifyConnection(key);
-      await chrome.storage.local.set({ [STORAGE_KEY]: key, [VERIFIED_AT_KEY]: Date.now() });
-      return { ok: true, data: await getStatus() };
-    }
     case "auth:disconnect":
       await chrome.storage.local.remove([STORAGE_KEY, VERIFIED_AT_KEY]);
       return { ok: true, data: await getStatus() };
@@ -214,6 +213,7 @@ async function handleMessage(request: BackgroundRequest): Promise<BackgroundResp
       await cancelAgentTask(request.taskId);
       return { ok: true, data: { taskId: request.taskId, status: "cancelled", message: "Task cancelled", stepCount: 0 } };
   }
+  throw new Error("UNSUPPORTED_REQUEST");
 }
 
 async function listAgentAdapters(): Promise<AgentAdapter[]> {
@@ -598,6 +598,8 @@ async function connect(): Promise<void> {
   authorizationUrl.searchParams.set("state", state);
   authorizationUrl.searchParams.set("app_name", "WebAgentMate");
   authorizationUrl.searchParams.set("scope", "api");
+  // Browser sign-in displays the commission disclosure above the referral button.
+  authorizationUrl.searchParams.set("ref", ORCA_REFERRAL_CODE);
 
   let redirectedTo: string | undefined;
   try {
@@ -643,9 +645,9 @@ async function discoverOAuthEndpoints(): Promise<{ authorizationEndpoint: string
   };
 }
 
-async function verifyConnection(key?: string): Promise<number> {
-  const stored = key ? null : await chrome.storage.local.get(STORAGE_KEY);
-  const apiKey = key ?? stored?.[STORAGE_KEY];
+async function verifyConnection(): Promise<number> {
+  const stored = await chrome.storage.local.get(STORAGE_KEY);
+  const apiKey = stored[STORAGE_KEY];
   if (typeof apiKey !== "string") throw new Error("AUTH_NOT_CONNECTED");
   const keyCheck = await fetchWithTimeout(ORCA_KEY_CHECK_URL, {
     headers: { Authorization: `Bearer ${apiKey}` }

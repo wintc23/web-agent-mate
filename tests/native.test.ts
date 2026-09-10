@@ -105,7 +105,7 @@ test("runtime cleanup waits for background descendants that ignore graceful term
   const workspace = await fs.mkdtemp(path.join(os.tmpdir(), "wam-descendants-"));
   let descendant: number | undefined;
   try {
-    await fs.writeFile(path.join(workspace, "stubborn.cjs"), "require('node:fs').writeFileSync('child.pid',String(process.pid));process.on('SIGTERM',()=>{});setInterval(()=>{},1000);");
+    await fs.writeFile(path.join(workspace, "stubborn.cjs"), "process.on('SIGTERM',()=>{});require('node:fs').writeFileSync('child.pid',String(process.pid));setInterval(()=>{},1000);");
     const node = `'${process.execPath.replace(/'/g, "'\\''")}'`;
     const helper = spawn(process.execPath, [path.resolve(".test-output/process-cleanup.cjs"), workspace, `${node} stubborn.cjs > /dev/null 2>&1 &`], { stdio: ["ignore", "ignore", "pipe"] });
     let errors = ""; helper.stderr.on("data", data => { errors += data; });

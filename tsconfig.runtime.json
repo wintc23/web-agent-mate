@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": { "moduleResolution": "bundler" },
-  "include": ["bridge/runtime", "src/agent"]
+  "include": ["bridge/runtime", "src/agent", "src/chrome-side-panel.d.ts"]
 }
