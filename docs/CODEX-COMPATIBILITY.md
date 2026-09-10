@@ -2,9 +2,12 @@
 
 Verified against the installed **Codex CLI 0.153.4** and its generated App Server protocol on 2026-09-08. The extension calls the real local Codex harness; it does not reproduce Codex's agent loop or route Codex through OrcaRouter.
 
+On 2026-09-10, a read-only configuration check and ephemeral thread creation also passed with the currently installed CLI **0.153.2**, including appended browser instructions, dynamic tools and project `AGENTS.md` discovery. No model turn was started in that check.
+
 | Capability | Current integration |
 | --- | --- |
 | Native tools, shell, patches, web search, local instructions | Executed by Codex. Local configuration, `AGENTS.md`, Skills, MCP, hooks and authentication remain owned by Codex. |
+| Browser tool preference | On thread start/resume/fork, the runtime reads the effective workspace developer instructions and appends WebAgentMate's browser policy. It prioritizes `wam_browser_*` and avoids Playwriter unless the user explicitly requests it. Native base instructions and permission settings remain inherited. |
 | Models and reasoning | Paged native model catalog, native supported reasoning levels, service tiers, execution/plan mode. Unselected settings inherit local Codex configuration. |
 | Sandbox and approvals | Inherited by default, with explicit conversation overrides for read-only/workspace-write/full access and approval policy. Native command/file/permission requests are interactive. Browser permission control remains separate. |
 | Running-turn input | `turn/steer` targets the active parent turn with `expectedTurnId`. Composer button or Ctrl/⌘+Enter adds instructions; Enter retains next-turn queuing. Commands work across extension windows. |
@@ -20,6 +23,7 @@ Verified against the installed **Codex CLI 0.153.4** and its generated App Serve
 - A terminal window and an extension window do not share a live App Server process. Import intentionally forks the terminal's stored history. Extension windows share their own progress, replies, queue and controls on the same device.
 - Each dispatched turn starts a local App Server and resumes its native thread. Closing the owning extension page stops the run; daemon-backed background execution and durable live reconnection are not implemented.
 - Browser dynamic tools are registered when the extension creates a thread. A branch imported from an unrelated terminal thread retains that thread's tools; the current protocol cannot add new dynamic tools to a resumed/forked thread. Its native Codex tools remain available.
+- Browser guidance is an instruction, not an execution-layer block. External Codex conversations need a separately connected WebAgentMate tool interface; adding `AGENTS.md` does not expose the extension's internal tools to them.
 - This release does not replicate the entire Codex terminal UI: slash-command menus, arbitrary PTY input, image/audio attachments in the composer, dedicated review/rollback/manual compact controls, scheduled/background goals, account administration, plugin installation, and arbitrary settings editing do not have dedicated interfaces here.
 - MCP OAuth and standard forms have protocol coverage; real OAuth consent requires a configured OAuth-capable MCP server and the user's account. The local verification server uses bearer-token authentication, so no real OAuth grant was claimed. Advanced nested `openai/form` schemas are shown as unsupported and can be declined/cancelled.
 - Model/feature availability and restrictions remain controlled by the installed Codex version, account, provider and local policy. Native protocol errors are surfaced rather than reported as successful support.

@@ -1,6 +1,7 @@
 import { createInterface } from "node:readline";
 import { spawn } from "node:child_process";
 import { BROWSER_TOOLS } from "../../src/agent/browser-tools";
+import { BROWSER_TOOL_INSTRUCTIONS } from "../../src/agent/browser-instructions";
 import { aborted, type AgentConfig, type RunContext, type ToolOutput, type WireMessage } from "../../src/agent/protocol";
 import { codexInput, codexThreadSettings, codexTurnSettings, validateElicitation, type CodexRequest, type CodexSkill, type NativeControl } from "../../src/agent/codex";
 import { killProcess } from "./local-tools";
@@ -156,7 +157,12 @@ export async function runCodex(start: NativeStart, host: CodexHost) {
       }
       send({ type: "codex_result", result }); return;
     }
-    const settings = codexThreadSettings(start.config);
+    // Append our browser guidance to the effective user/project instructions.
+    // Apply it on start, resume and fork without changing config files or the
+    // native base prompt, sandbox, approval policy, skills or MCP configuration.
+    const effective = await rpc("config/read", { cwd: start.config.workspace, includeLayers: false });
+    const inherited = effective.config?.developer_instructions;
+    const settings = { ...codexThreadSettings(start.config), developerInstructions: [typeof inherited === "string" ? inherited : "", BROWSER_TOOL_INSTRUCTIONS].filter(Boolean).join("\n\n") };
     const thread = await rpc(start.nativeSessionId ? "thread/resume" : start.nativeForkFromId ? "thread/fork" : "thread/start", start.nativeSessionId ? { ...settings, threadId: start.nativeSessionId } : start.nativeForkFromId ? { ...settings, threadId: start.nativeForkFromId, deferGoalContinuation: true } : { ...settings, dynamicTools: BROWSER_TOOLS.map(t => ({ name: `wam_${t.name}`, description: t.description, inputSchema: t.parameters })) });
     threadId = thread.thread.id;
     await context.emit({ type: "session", id: threadId });

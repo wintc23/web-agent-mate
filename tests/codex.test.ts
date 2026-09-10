@@ -9,6 +9,7 @@ import { applyEvent, makeSession } from "../src/agent/sessions";
 import { enqueueMessage, takeQueuedMessage } from "../src/agent/message-queue";
 import { parseSessionBackup, serializeSession } from "../src/agent/session-backup";
 import { runCodex } from "../bridge/runtime/codex";
+import { BROWSER_TOOL_INSTRUCTIONS } from "../src/agent/browser-instructions";
 
 const config = { ...DEFAULT_CONFIG, location: "local" as const, engine: "codex" as const, model: "" };
 test("Codex inherits native permissions/instructions unless explicitly overridden, and uses native plan mode", () => {
@@ -72,6 +73,7 @@ const lines = readline.createInterface({input:process.stdin});
 lines.on("line", line => {
  const m = JSON.parse(line); fs.appendFileSync("rpc.jsonl", line+"\\n");
  if(m.method === "initialize") reply(m.id,{});
+ if(m.method === "config/read") reply(m.id,{config:{developer_instructions:"Keep the native project conventions."}});
  if(m.method === "thread/start") reply(m.id,{thread:{id:"parent"},model:"native",reasoningEffort:"medium"});
  if(m.method === "turn/start") { reply(m.id,{turn:{id:"turn-1"}}); event("turn/started",{threadId:"parent",turn:{id:"turn-1"}}); event("turn/completed",{threadId:"child",turn:{id:"child-turn",status:"completed"}}); }
  if(m.method === "turn/steer") { reply(m.id,{turnId:"turn-1"}); send({id:100,method:"mcpServer/elicitation/request",params:{threadId:"parent",serverName:"test",mode:"form",message:"Choose",requestedSchema:{type:"object",properties:{count:{type:"integer",minimum:1}},required:["count"]}}}); }
@@ -92,11 +94,50 @@ lines.on("line", line => {
     assert.equal(rpc.some(item => item.method === "turn/interrupt"), false);
     assert.equal(rpc.find(item => item.method === "turn/steer").params.expectedTurnId, "turn-1");
     assert.equal(rpc.find(item => item.method === "turn/start").params.collaborationMode.settings.model, "native");
+    assert.equal(rpc.find(item => item.method === "thread/start").params.developerInstructions, `Keep the native project conventions.\n\n${BROWSER_TOOL_INSTRUCTIONS}`);
     assert.deepEqual(rpc.find(item => item.id === 100 && item.result).result, { action: "accept", content: { count: 2 } });
     assert.equal(events.filter(event => event.type === "steered").length, 1);
     assert.ok(events.some(event => event.type === "usage"));
     assert.ok(events.some(event => event.type === "detail" && event.name === "plan" && event.text.includes("✓ Verify")));
   } finally { controller.abort(); if (old === undefined) delete process.env.WAM_CODEX_PATH; else process.env.WAM_CODEX_PATH = old; await fs.rm(workspace, { recursive: true, force: true }); }
+});
+
+test("browser guidance reaches Codex resumes and forks without replacing native permissions or user input", { timeout: 10_000 }, async () => {
+  const workspace = await fs.mkdtemp(path.join(os.tmpdir(), "wam-codex-browser-guidance-"));
+  const executable = path.join(workspace, "codex-fixture");
+  await fs.writeFile(executable, `#!${process.execPath}
+const fs = require("node:fs"), readline = require("node:readline");
+const send = value => process.stdout.write(JSON.stringify(value)+"\\n");
+readline.createInterface({input:process.stdin}).on("line", line => {
+ const m = JSON.parse(line); fs.appendFileSync("rpc.jsonl",line+"\\n");
+ if(m.method === "initialize") send({id:m.id,result:{}});
+ if(m.method === "config/read") send({id:m.id,result:{config:{developer_instructions:"Preserve the workspace conventions."}}});
+ if(["thread/resume","thread/fork"].includes(m.method)) send({id:m.id,result:{thread:{id:"session"},model:"native"}});
+ if(m.method === "turn/start") { send({id:m.id,result:{turn:{id:"turn"}}}); send({method:"turn/completed",params:{threadId:"session",turn:{id:"turn",status:"completed"}}}); }
+});
+`, { mode: 0o700 });
+  const old = process.env.WAM_CODEX_PATH; process.env.WAM_CODEX_PATH = executable;
+  try {
+    for (const identity of [{ nativeSessionId: "session" }, { nativeForkFromId: "original" }]) {
+      await runCodex({ config: { ...config, workspace }, prompt: "Read the requested page", history: [], ...identity }, {
+        context: { signal: new AbortController().signal, emit: async () => undefined, ask: async () => { throw new Error("Unexpected approval"); } },
+        browser: async () => { throw new Error("Unexpected browser call"); }, activity() {}, send() {}, cleanups: new Set(), setControl() {}
+      });
+    }
+    const requests = (await fs.readFile(path.join(workspace, "rpc.jsonl"), "utf8")).trim().split("\n").map(line => JSON.parse(line));
+    const threadRequests = requests.filter(item => ["thread/resume", "thread/fork"].includes(item.method));
+    assert.deepEqual(threadRequests.map(item => item.method), ["thread/resume", "thread/fork"]);
+    for (const { params } of threadRequests) {
+      assert.equal(params.developerInstructions, `Preserve the workspace conventions.\n\n${BROWSER_TOOL_INSTRUCTIONS}`);
+      for (const key of ["baseInstructions", "approvalPolicy", "sandbox", "config", "dynamicTools"]) assert.equal(Object.hasOwn(params, key), false);
+    }
+    assert.equal(threadRequests[1].params.deferGoalContinuation, true);
+    for (const { params } of requests.filter(item => item.method === "config/read")) assert.deepEqual(params, { cwd: workspace, includeLayers: false });
+    for (const { params } of requests.filter(item => item.method === "turn/start")) assert.deepEqual(params.input, codexInput("Read the requested page"));
+  } finally {
+    if (old === undefined) delete process.env.WAM_CODEX_PATH; else process.env.WAM_CODEX_PATH = old;
+    await fs.rm(workspace, { recursive: true, force: true });
+  }
 });
 
 test("MCP OAuth keeps App Server alive until its callback confirms login", { timeout: 10_000 }, async () => {

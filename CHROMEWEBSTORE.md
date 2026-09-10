@@ -6,7 +6,7 @@ Last updated: 2026-09-10
 
 **Status:** package and listing prepared locally; not submitted. An authenticated Chrome Web Store dashboard connection is still required. Do not describe the extension as available in the Store until the public listing is verified.
 
-Prepared upload: `release/artifacts/webagentmate-chrome-0.6.0.zip` (506,414 bytes, 16 runtime files). SHA-256: `d45dba8e4de1adaec4427e81793c56009bdb15cd2c422a9eb747a5584baffabd`. The archive has `manifest.json` at its root and excludes source, screenshots, documentation, source maps, credentials and desktop installers.
+Prepared upload: `release/artifacts/webagentmate-chrome-0.6.0.zip` (506,809 bytes, 16 runtime files). SHA-256: `07b44cc68153d329386dffe74340aa52b3d3ab06b6705870cbbc0132da5219b6`. The archive has `manifest.json` at its root and excludes source, screenshots, documentation, source maps, credentials and desktop installers.
 
 The portfolio page at https://wintc.top/products/webagentmate is live as a development preview. It currently links to source installation rather than an unverified Store URL.
 
@@ -29,7 +29,7 @@ The portfolio page at https://wintc.top/products/webagentmate is live as a devel
 ```text
 Ask questions about the page you are reading, summarize or translate its content, and carry out browser tasks with WebAgentMate, an open-source AI assistant in your Chrome side panel.
 
-OrcaRouter referral disclosure: browser sign-in includes WebAgentMate's referral code. If you register through this entry, later qualifying purchases may earn the developers a commission. No referral bonus or extra free credit is promised.
+OrcaRouter referral disclosure: browser sign-in includes WebAgentMate's referral code. If you register through this entry, later qualifying purchases may earn the developers a commission.
 
 UNDERSTAND AND WORK WITH WEB PAGES
 Summarize articles, explain selected passages, translate text, and extract useful information. Describe a task and let the agent choose supported page-reading, navigation, form and screenshot tools.
@@ -58,7 +58,7 @@ Support: https://github.com/wintc23/web-agent-mate/issues
 ```text
 WebAgentMate 是开源 Chrome 网页助手。在网页旁提问、总结文章、翻译内容，或用对话描述希望完成的浏览器任务。
 
-OrcaRouter 推广说明：浏览器登录会携带 WebAgentMate 的推广码。通过此入口注册，后续符合条件的消费可能为开发者带来佣金。本项目不承诺推广奖励或额外免费额度。
+OrcaRouter 推广说明：浏览器登录会携带 WebAgentMate 的推广码。通过此入口注册，后续符合条件的消费可能为开发者带来佣金。
 
 理解并处理网页
 总结文章、解释选中文本、翻译和提取信息。智能体按任务选择网页读取、导航、表单和截图等工具。
@@ -117,11 +117,11 @@ WebAgentMate helps users understand the webpage they are viewing and carry out r
 
 Include this disclosure prominently in the public Store description and keep it visible in installation materials. Updating this file does not update the live listing.
 
-OrcaRouter browser sign-in is a referral entry. If you register through it, later qualifying purchases may earn the WebAgentMate developers a commission under OrcaRouter's partner program. No referral bonus or extra free credit is promised.
+OrcaRouter browser sign-in is a referral entry. If you register through it, later qualifying purchases may earn the WebAgentMate developers a commission under OrcaRouter's partner program.
 
 Chinese copy:
 
-OrcaRouter 浏览器登录是推广入口。通过此入口注册，后续符合条件的消费可能按照 OrcaRouter 合作计划为 WebAgentMate 开发者带来佣金。本项目不承诺推广奖励或额外免费额度。
+OrcaRouter 浏览器登录是推广入口。通过此入口注册，后续符合条件的消费可能按照 OrcaRouter 合作计划为 WebAgentMate 开发者带来佣金。
 
 Before submission, confirm the direct-user-benefit basis and prominent-disclosure requirements in [Chrome's Affiliate Ads policy](https://developer.chrome.com/docs/webstore/program-policies/affiliate-ads/). A regular-weight disclosure immediately above the sign-in button identifies it as a referral entry and explains the commission in all six interface languages. There is no duplicate information tooltip. The public listing and installation materials must include the disclosure as well. Disclosure and a user click do not by themselves establish direct user benefit; see `docs/ORCAROUTER-PARTNER-REVIEW.md`.
 
@@ -163,6 +163,8 @@ Refresh all store screenshots for 0.6.0. Include the Agent avatar, an in-progres
 Capture the vertical Settings navigation in wide and narrow layouts, and the separate Local section with Bridge installation and connection checks. The Models screenshots should show the regular-weight referral and commission disclosure above the full-width OrcaRouter sign-in button in both light and dark themes. Refresh composer screenshots to show the explicit permission label and the clickable Settings connection reminder.
 
 ## Version history
+
+- 0.6.0 (development, 2026-09-10) — Added shared browser-tool guidance for built-in, Claude and Codex agents, prioritizing WebAgentMate's own tools and avoiding Playwriter unless explicitly requested. Codex appends the guidance to inherited workspace instructions on start, resume and fork. Simplified referral copy in README, privacy, listing and portfolio to explain the actual commission relationship.
 
 - 0.6.0 (development, 2026-09-10) — Removed manual OrcaRouter API-key entry and its background connection endpoint. Browser sign-in is the sole connection method; verification and disconnect remain available. Updated connection errors and current setup/privacy descriptions. Refresh Models settings screenshots.
 

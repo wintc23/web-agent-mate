@@ -4,7 +4,7 @@
 
 > **[注册 OrcaRouter（推广链接）](https://www.orcarouter.ai/register?ref=ref_22606f54f9038927f996)**
 >
-> 通过此链接或 WebAgentMate 的浏览器登录入口注册，后续符合条件的消费可能为开发者带来佣金。本项目不承诺推广奖励或额外免费额度，详见[隐私说明](PRIVACY.md)。
+> 通过此链接或 WebAgentMate 的浏览器登录入口注册，后续符合条件的消费可能为开发者带来佣金。详见[隐私说明](PRIVACY.md)。
 
 [![CI](https://github.com/wintc23/web-agent-mate/actions/workflows/ci.yml/badge.svg)](https://github.com/wintc23/web-agent-mate/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 

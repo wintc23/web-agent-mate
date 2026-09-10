@@ -53,7 +53,7 @@
     },
     {
       "type": "callout", "title": "OrcaRouter 推广说明", "subtitle": "", "layout": "default", "visible": true, "sort": 4,
-      "content": {"text": "内置智能体的 OrcaRouter 浏览器登录会携带项目推广码。通过此入口注册，后续符合条件的消费可能为开发者带来佣金。本项目不承诺推广奖励或额外免费额度；Codex 和 Claude Code 使用各自的登录。"}
+      "content": {"text": "内置智能体的 OrcaRouter 浏览器登录会携带项目推广码。通过此入口注册，后续符合条件的消费可能为开发者带来佣金。Codex 和 Claude Code 使用各自的登录。"}
     }
   ],
   "published": true,

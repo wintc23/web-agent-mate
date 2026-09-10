@@ -4,7 +4,7 @@ English | [简体中文](README.zh-CN.md)
 
 > **[Try OrcaRouter — referral link](https://www.orcarouter.ai/register?ref=ref_22606f54f9038927f996)**
 >
-> Registering through this link or WebAgentMate's browser sign-in may earn the developers a commission on later qualifying purchases. No referral bonus or extra free credit is promised. See [Privacy](PRIVACY.md).
+> Registering through this link or WebAgentMate's browser sign-in may earn the developers a commission on later qualifying purchases. See [Privacy](PRIVACY.md).
 
 [![CI](https://github.com/wintc23/web-agent-mate/actions/workflows/ci.yml/badge.svg)](https://github.com/wintc23/web-agent-mate/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
