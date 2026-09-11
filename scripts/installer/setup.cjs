@@ -106,7 +106,12 @@ async function migrateUsers(source, remove = false) {
   const entries = (await fs.readFile("/etc/passwd", "utf8")).split("\n").map(line => line.split(":"));
   for (const [name, , uid, , , home] of entries) {
     if (Number(uid) < 1000 || Number(uid) >= 65534 || !home?.startsWith("/")) continue;
-    execFileSync("runuser", ["-u", name, "--", process.execPath, __filename, remove ? "migrate-remove" : "migrate-user", source], { stdio: "inherit" });
+    // A package manager can inherit the invoking account's XDG directories.
+    // Each migration must resolve paths for its target account, not that user.
+    execFileSync("runuser", ["-u", name, "--", process.execPath, __filename, remove ? "migrate-remove" : "migrate-user", source], {
+      stdio: "inherit",
+      env: { PATH: "/usr/sbin:/usr/bin:/sbin:/bin", HOME: home, USER: name, LOGNAME: name, XDG_DATA_HOME: path.join(home, ".local/share"), XDG_CONFIG_HOME: path.join(home, ".config") }
+    });
   }
 }
 async function migrateUser(source, remove = false) {
