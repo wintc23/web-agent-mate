@@ -260,3 +260,5 @@ ZIP 完整性和必要文件检查通过。Bridge 包包含可执行文件、安
 - ZIP 安装脚本直接调用包内 Node 和共用安装器，安装前验证完整性。源码安装脚本先生成包含私有 Node 的完整 payload。更新 README、安装指南、平台打包文档和项目规则，移除要求最终用户单独安装 Node 的旧说明。
 - 102 项测试、8 项 Rust 测试、Rust release 构建、runtime 构建、Rust 格式和 shell 语法检查通过。macOS x64 完整 ZIP 解压后的真实 Bridge 在空 PATH 下可连接；真实 runtime 可加载；隔离探针确认运行时使用内置 Node，项目 shell 使用用户的 Node；删除内置 Node 后，即使系统 Node 存在也拒绝启动。
 - 使用完整 payload 在隔离账户目录验证安装、升级、运行时加载和卸载登记，会话文件保留。当前账户已安装的连接助手未被替换。其他平台的实际打包验证通过 Release 工作流执行；正式签名、公开发布和自动更新状态不因这些本地检查而改变。Bridge 当前仍需用户打开新版安装器完成升级。
+- 跨平台结果：[Release 工作流 34603906776](https://github.com/wintc23/web-agent-mate/actions/runs/34603906776) 全部通过，代码提交 `ee096e1`；扩展构建、Mac Intel / Apple Silicon DMG 安装升级与 ZIP、Windows EXE 安装卸载与 ZIP、Linux DEB 安装卸载与 ZIP 均经过实际执行，RPM 完成构建和摘要检查。验证脚本使用第二套真实 Node，确认项目 shell 的 Node 选择和文件内容保持不变。Windows 最初的验证命令引号问题已修正；Linux 多账号迁移继承错误 XDG 路径的问题已修复。Mac ARM64 一次 DMG 生成遇到空间不足，单独重跑后通过。
+- 本地完整 Mac Intel ZIP 和 DMG 已重新生成，替换原先缺少私有 Node 的开发 ZIP。实际 ZIP 安装脚本在不含 Node 的 PATH 下完成安装及升级，shell 配置保持不变。工作流通过手动触发，仅生成开发产物，`publish` 未执行；新版安装包仍未正式公开发布。
