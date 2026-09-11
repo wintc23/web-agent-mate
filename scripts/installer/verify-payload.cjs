@@ -3,6 +3,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn, execFileSync } = require("node:child_process");
 const assert = require("node:assert/strict");
+const { createHash } = require("node:crypto");
 const { validatePayload } = require("./setup.cjs");
 
 async function request(binary, extensionId, env, method = "bridge.hello") {
@@ -63,21 +64,24 @@ async function verifyPayload(payload) {
     await fs.copyFile(path.join(payload, binaryName), path.join(probe, binaryName));
     const userBin = path.join(temporary, "user-bin");
     await fs.mkdir(userBin);
-    const userNode = path.join(userBin, process.platform === "win32" ? "node.cmd" : "node");
-    const userContents = process.platform === "win32" ? "@echo off\r\necho user-node-fixture\r\n" : "#!/bin/sh\nprintf 'user-node-fixture\\n'\n";
-    await fs.writeFile(userNode, userContents, { mode: 0o755 });
+    // Use a real second Node executable, including on Windows where .cmd
+    // wrappers have different command-discovery rules from node.exe.
+    const userNode = path.join(userBin, process.platform === "win32" ? "node.exe" : "node");
+    await fs.copyFile(process.execPath, userNode);
+    const userHash = createHash("sha256").update(await fs.readFile(userNode)).digest("hex");
     await fs.writeFile(path.join(probe, "runtime/agent.mjs"), `import { spawnSync } from 'node:child_process';
 const shell = process.platform === 'win32' ? process.env.SystemRoot + '/System32/cmd.exe' : '/bin/sh';
-const args = process.platform === 'win32' ? ['/d', '/c', 'node --version'] : ['-c', 'node --version'];
+const args = process.platform === 'win32' ? ['/d', '/s', '/c', 'node --version'] : ['-c', 'node --version'];
 const result = spawnSync(shell, args, { encoding: 'utf8' });
-console.log(JSON.stringify({ version: process.version, executable: process.execPath, path: process.env.PATH, userNode: result.stdout.trim() }));
+console.log(JSON.stringify({ version: process.version, executable: process.execPath, path: process.env.PATH, userNode: result.stdout?.trim(), status: result.status, error: result.error?.message, stderr: result.stderr }));
 `);
     const result = await request(path.join(probe, binaryName), meta.extensionId, { ...env, PATH: userBin }, "runtime.open");
     assert.equal(result.version, meta.nodeVersion);
     assert.equal(await fs.realpath(result.executable), await fs.realpath(path.join(probe, nodeName)));
     assert.equal(result.path, userBin, "Private Node must not change the PATH used by project commands");
-    assert.equal(result.userNode, "user-node-fixture", "Project commands must retain the user's Node selection");
-    assert.equal(await fs.readFile(userNode, "utf8"), userContents);
+    assert.equal(result.status, 0, JSON.stringify({ error: result.error, stderr: result.stderr }));
+    assert.equal(result.userNode, process.version, "Project commands must retain the user's Node selection");
+    assert.equal(createHash("sha256").update(await fs.readFile(userNode)).digest("hex"), userHash);
 
     await fs.rm(path.join(probe, nodeName));
     const systemNodeEnv = { ...env, PATH: path.dirname(process.execPath) };
