@@ -26,6 +26,17 @@ async function metadata(source) {
   if (!/^[a-p]{32}$/.test(value.extensionId) || !/^\d+\.\d+\.\d+$/.test(value.version)) throw new Error("Invalid installer metadata");
   return value;
 }
+async function validatePayload(source, platform) {
+  const meta = await metadata(source);
+  if (!["darwin", "linux", "win32"].includes(meta.platform) || !["x64", "arm64"].includes(meta.arch) || !/^v\d+\.\d+\.\d+$/.test(meta.nodeVersion)) throw new Error("Invalid runtime metadata; download a complete Connector package.");
+  if (platform && meta.platform !== platform) throw new Error("This installer is for a different operating system");
+  const files = [meta.platform === "win32" ? "webagentmate-bridge.exe" : "webagentmate-bridge", "runtime/agent.mjs", meta.platform === "win32" ? "runtime/node/node.exe" : "runtime/node/bin/node", "runtime/licenses/node.txt", "LICENSE"];
+  for (const file of files) {
+    const info = await fs.stat(path.join(source, file)).catch(() => undefined);
+    if (!info?.isFile() || !info.size) throw new Error(`Incomplete Connector package (${file}). Download the complete package again.`);
+  }
+  return meta;
+}
 async function atomicWrite(file, text) {
   await fs.mkdir(path.dirname(file), { recursive: true });
   const temporary = `${file}.${randomUUID()}.tmp`;
@@ -39,18 +50,18 @@ const registryKeys = ["Google\\Chrome", "Chromium", "Microsoft\\Edge"].map(brows
 async function register(source, options = {}) {
   const platform = options.platform || process.platform;
   const target = options.locations || locations(platform);
-  const meta = await metadata(source);
+  const meta = await validatePayload(source, platform);
+  const extensionId = options.extensionId || meta.extensionId;
+  if (!/^[a-p]{32}$/.test(extensionId)) throw new Error("Invalid extension ID");
   const binary = path.join(source, `webagentmate-bridge${platform === "win32" ? ".exe" : ""}`);
   await fs.access(binary);
-  for (const file of target.manifests) await atomicWrite(file, manifest(binary, meta.extensionId));
+  for (const file of target.manifests) await atomicWrite(file, manifest(binary, extensionId));
   if (platform === "win32") for (const key of registryKeys) (options.exec || execFileSync)("reg.exe", ["add", key, "/ve", "/t", "REG_SZ", "/d", target.manifests[0], "/f"], { windowsHide: true, stdio: "pipe" });
 }
 async function install(source, options = {}) {
   const platform = options.platform || process.platform;
   const target = options.locations || locations(platform);
-  const meta = await metadata(source);
-  if (meta.platform !== platform) throw new Error("This installer is for a different operating system");
-  for (const file of ["webagentmate-bridge", "runtime/agent.mjs", "runtime/node/bin/node"]) await fs.access(path.join(source, file));
+  await validatePayload(source, platform);
   await fs.mkdir(target.root, { recursive: true });
   const staging = path.join(target.root, `.install-${randomUUID()}`);
   const bin = path.join(target.root, "bin"), backup = path.join(target.root, `.previous-${randomUUID()}`);
@@ -113,10 +124,10 @@ async function migrateUser(source, remove = false) {
     }
   }
 }
-module.exports = { locations, manifest, install, register, unregister };
+module.exports = { locations, manifest, install, register, unregister, validatePayload };
 if (require.main === module) (async () => {
   const action = process.argv[2], source = path.resolve(process.argv[3] || __dirname);
-  if (action === "install") await install(source);
+  if (action === "install") await install(source, { extensionId: process.argv[4] });
   else if (action === "register") await register(source);
   else if (action === "uninstall") { await unregister(); if (process.platform === "darwin") await fs.rm(path.join(locations().root, "bin"), { recursive: true, force: true }); }
   else if (action === "migrate-users" || action === "remove-users") await migrateUsers(source, action === "remove-users");

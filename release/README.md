@@ -1,6 +1,8 @@
 # WebAgentMate release packaging
 
-The source of truth for published archives is [`.github/workflows/release.yml`](../.github/workflows/release.yml). A `v*` tag builds the extension and four Bridge packages, then uploads them to GitHub Releases. A manual workflow run builds downloadable Actions artifacts without publishing a release.
+The source of truth is [`.github/workflows/release.yml`](../.github/workflows/release.yml). Every Connector distribution, including ZIPs, contains its own Node executable and runtime. Users do not install Node.js separately.
+
+Graphical packages are macOS x64/ARM64 DMGs, a Windows x64 EXE, and Linux x64 DEB/RPM packages. ZIPs contain the same complete payload plus installation/uninstallation scripts:
 
 ```text
 webagentmate-extension.zip
@@ -10,8 +12,10 @@ webagentmate-bridge-windows-x64.zip
 webagentmate-bridge-linux-x64.zip
 ```
 
-Each v0.6 Bridge ZIP contains the native binary, the platform's installation and uninstallation scripts, `runtime/agent.mjs`, runtime dependency license notices, and the project's `LICENSE`. Users must extract the entire package and install Node.js 20+ separately. Unix ZIP extraction may require restoring executable permissions; see the [installation guide](../README.md#install-bridge).
+Build ZIPs with `node scripts/installer/archive.cjs build/installer-payload` after preparing the payload as described in [installer development](../docs/INSTALLER-DEVELOPMENT.md). The archive builder extracts the ZIP and verifies the actual packaged Bridge and private Node before producing a checksum and runtime verification record. Public release checks require matching verification records for all four Bridge ZIPs and platform signing records for graphical installers. Never distribute a bare Bridge binary or an old ZIP missing its private Node.
 
-The checked-in extension public key fixes the default ID at `lmlkkallnnjijicmfmfdelnamcnhflfg`. Installers register that exact origin by default. Forks using a different key must pass their extension ID explicitly to the installer (`-ExtensionId` in PowerShell). The installer accepts one exact ID; there is no interactive pairing flow or wildcard origin.
+The private Node is stored under `runtime/node/` inside the Connector installation. Bridge launches it by absolute path and preserves the caller's PATH for project commands. Installation and removal do not modify global Node, npm, version-manager configuration, shell profiles, or global PATH. Missing runtime files require reinstalling a complete package; the installed Bridge does not fall back to system Node.
 
-Generated local packages belong in the ignored `release/artifacts/` directory. `manifest.template.json` is reserved for future distribution metadata; the current GitHub workflow does not generate a release manifest, checksums, signed installers, or an auto-update feed.
+The checked-in extension public key fixes the default ID at `lmlkkallnnjijicmfmfdelnamcnhflfg`. Installers register that exact origin by default. ZIP installers accept an explicit extension ID (`-ExtensionId` in PowerShell). There is no wildcard origin. Extract the entire ZIP before running its installer; no separate Node installation is needed.
+
+A `v*` tag publishes only after all required builds and checks succeed. A manual workflow run creates development artifacts without publishing a release. Generated local packages belong in ignored `release/artifacts/`. Bridge updates currently require opening the new installer; there is no background updater. `manifest.template.json` is reserved for future distribution metadata.

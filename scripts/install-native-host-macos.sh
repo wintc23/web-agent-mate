@@ -6,44 +6,23 @@ if [[ $# -gt 1 || ! "$extension_id" =~ ^[a-p]{32}$ ]]; then
   echo "Usage: $0 [chrome-extension-id]" >&2
   exit 2
 fi
-project_dir="$(cd "$(dirname "$0")/.." && pwd)"
 script_dir="$(cd "$(dirname "$0")" && pwd)"
-source_binary="$script_dir/webagentmate-bridge"
-if [[ ! -x "$source_binary" ]]; then
-  source_binary="$project_dir/bridge/target/release/webagentmate-bridge"
-fi
-install_root="$HOME/Library/Application Support/WebAgentMate"
-binary_dir="$install_root/bin"
-manifest_dir="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
-manifest_path="$manifest_dir/ai.webagentmate.bridge.json"
+project_dir="$(cd "$script_dir/.." && pwd)"
+payload="$script_dir"
 
-if [[ ! -x "$source_binary" ]]; then
-  if [[ -x "$project_dir/scripts/build-bridge.sh" ]]; then
+# Source checkouts are maintainer builds; downloaded packages are offline.
+if [[ -f "$project_dir/bridge/Cargo.toml" ]]; then
+  if [[ ! -x "$project_dir/bridge/target/release/webagentmate-bridge" || ! -f "$project_dir/bridge/runtime-dist/agent.mjs" ]]; then
     "$project_dir/scripts/build-bridge.sh"
-  else
-    echo "Bridge binary is missing. Download the release package for your Mac." >&2
-    exit 1
   fi
+  node "$project_dir/scripts/installer/prepare.cjs" --platform darwin --arch "$(node -p process.arch)" --binary "$project_dir/bridge/target/release/webagentmate-bridge" --out "$project_dir/build/installer-payload"
+  payload="$project_dir/build/installer-payload"
 fi
-
-mkdir -p "$binary_dir" "$manifest_dir"
-install -m 755 "$source_binary" "$binary_dir/webagentmate-bridge"
-runtime_source="$project_dir/bridge/runtime-dist/agent.mjs"
-if [[ -f "$script_dir/runtime/agent.mjs" ]]; then runtime_source="$script_dir/runtime/agent.mjs"; fi
-if [[ ! -f "$runtime_source" ]]; then
-  echo "Runtime bundle missing. Run npm run build:runtime before installing." >&2
+if [[ ! -f "$payload/runtime/node/bin/node" || ! -f "$payload/setup.cjs" || ! -f "$payload/bundle.json" ]]; then
+  echo "Incomplete Connector package. Download and extract the complete package again." >&2
   exit 1
 fi
-mkdir -p "$binary_dir/runtime"
-install -m 644 "$runtime_source" "$binary_dir/runtime/agent.mjs"
-if [[ -d "$(dirname "$runtime_source")/licenses" ]]; then cp -R "$(dirname "$runtime_source")/licenses" "$binary_dir/runtime/"; fi
-if [[ -d "$(dirname "$runtime_source")/node" ]]; then cp -R "$(dirname "$runtime_source")/node" "$binary_dir/runtime/"; fi
-
-temporary="$(mktemp "$manifest_dir/ai.webagentmate.bridge.XXXXXX")"
-printf '{\n  "name": "ai.webagentmate.bridge",\n  "description": "WebAgentMate native bridge",\n  "path": "%s",\n  "type": "stdio",\n  "allowed_origins": ["chrome-extension://%s/"]\n}\n' \
-  "$binary_dir/webagentmate-bridge" "$extension_id" > "$temporary"
-chmod 644 "$temporary"
-mv "$temporary" "$manifest_path"
-
-echo "Installed WebAgentMate Bridge for extension: $extension_id"
-echo "Restart Chrome or reload the extension before testing."
+# Some ZIP extractors discard executable permissions.
+chmod u+x "$payload/runtime/node/bin/node" "$payload/webagentmate-bridge"
+"$payload/runtime/node/bin/node" "$payload/setup.cjs" install "$payload" "$extension_id"
+echo "Installed WebAgentMate Connector. Restart Chrome or reload the extension."

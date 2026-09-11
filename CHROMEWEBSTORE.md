@@ -1,6 +1,6 @@
 # Chrome Web Store submission notes
 
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 
 ## Submission status and listing fields
 
@@ -163,6 +163,8 @@ Refresh all store screenshots for 0.6.0. Include the Agent avatar, an in-progres
 Capture the vertical Settings navigation in wide and narrow layouts, and the separate Local section with Bridge installation and connection checks. The Models screenshots should show the regular-weight referral and commission disclosure above the full-width OrcaRouter sign-in button in both light and dark themes. Refresh composer screenshots to show the explicit permission label and the clickable Settings connection reminder.
 
 ## Version history
+
+- 0.6.0 (development, 2026-09-11) — All Connector distributions include a private runtime, including ZIPs. Added extracted-package verification and publication checks. Project commands retain the existing PATH and Node selection; damaged installations require reinstalling the complete package.
 
 - 0.6.0 (development, 2026-09-10) — Added shared browser-tool guidance for built-in, Claude and Codex agents, prioritizing WebAgentMate's own tools and avoiding Playwriter unless explicitly requested. Codex appends the guidance to inherited workspace instructions on start, resume and fork. Simplified referral copy in README, privacy, listing and portfolio to explain the actual commission relationship.
 

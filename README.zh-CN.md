@@ -41,7 +41,7 @@ WebAgentMate 是一个开源 Chrome 助手，将本地 Codex、Claude Code 和�
 | Claude Code | 通过 Claude Agent SDK 调用本机 Claude Code | 安装 Claude Code CLI 并完成认证 |
 | 内置智能体 | 默认在扩展内运行工具循环，通过 OrcaRouter 调用模型；本机文件与命令为可选模式 | 在设置中通过浏览器登录 OrcaRouter |
 
-内置智能体的网页任务只需扩展和 OrcaRouter 连接。开启**本机文件与命令**，或选择 Codex / Claude 时才需要安装连接助手。图形安装器内置运行环境，用户无需单独安装 Node.js。Codex、Claude 使用各自的认证；只有内置智能体需要连接 OrcaRouter。模型可用性、额度和费用取决于对应服务。
+内置智能体的网页任务只需扩展和 OrcaRouter 连接。开启**本机文件与命令**，或选择 Codex / Claude 时才需要安装连接助手。连接助手的安装器和完整 ZIP 包都内置运行环境，用户无需单独安装 Node.js。Codex、Claude 使用各自的认证；只有内置智能体需要连接 OrcaRouter。模型可用性、额度和费用取决于对应服务。
 
 未安装连接助手时可以运行内置智能体的网页任务，以及查看和管理所有会话、草稿。设置页采用左侧纵向导航与右侧内容区，窄侧栏下导航显示图标并提供名称提示。设置分为“模型服务”“本地连接”“通用”和“关于”，分别管理模型连接、本机工具、语言与主题，以及版本与隐私说明。“设置 → 本地连接”提供“下载连接助手”“安装说明”和“重新检测”，选择本机能力而未连接时也会显示入口。详见[连接助手安装说明](docs/BRIDGE-INSTALL.md)。
 
@@ -115,7 +115,7 @@ cargo build --manifest-path bridge/Cargo.toml --release
 | Ubuntu / Debian x64 | `webagentmate-bridge-linux-x64.deb` | 用系统软件安装器打开并安装 |
 | Fedora x64 | `webagentmate-bridge-linux-x64.rpm` | 用系统软件安装器打开并安装 |
 
-安装器内置 Node.js 和依赖许可证，用户不需要执行命令或单独安装 Node.js。安装完成后返回插件点击**重新检测**，Chrome 会按需启动连接助手。macOS 要求 13.5+；Linux 软件包面向 Ubuntu 22.04+、Debian 12+ 及兼容 glibc 2.35+ 的发行版。
+连接助手的所有分发包均内置独立的 Node.js 和依赖许可证，不替换已有 Node，也不修改全局 PATH。使用图形安装器时，用户不需要执行命令或单独安装 Node.js。安装完成后返回插件点击**重新检测**，Chrome 会按需启动连接助手。macOS 要求 13.5+；Linux 软件包面向 Ubuntu 22.04+、Debian 12+ 及兼容 glibc 2.35+ 的发行版。
 
 上表是新版打包目标，不代表这些包已经发布。匹配安装包尚未发布时，插件会明确提示。旧 v0.2.x 安装包不含 v0.6 运行时。macOS 正式发布需 Developer ID 签名和公证，Windows 正式安装器需代码签名。开发构建与发布配置见[安装器开发说明](docs/INSTALLER-DEVELOPMENT.md)，用户操作见[安装说明](docs/BRIDGE-INSTALL.md)。
 
@@ -174,8 +174,8 @@ node scripts/smoke-runtime.cjs claude --turn
 | 问题 | 处理方式 |
 | --- | --- |
 | 连接助手未连接或找不到 native host | 重新运行对应系统的安装器，核对扩展与连接助手版本，然后重启 Chrome。 |
-| `NODE_20_REQUIRED` | 图形安装请重新运行匹配版本的安装器，恢复内置运行环境；源码开发方式需要可被 Bridge 找到的 Node.js 20+。 |
-| `RUNTIME_BUNDLE_MISSING` 或要求更新 Bridge | 源码安装需重新构建 runtime、Bridge 并运行安装器；图形安装请重新运行匹配版本的安装器。 |
+| `NODE_20_REQUIRED` | 重新安装匹配版本的完整连接助手包，恢复包内运行环境，无需单独安装 Node.js。 |
+| `RUNTIME_BUNDLE_MISSING` 或要求更新 Bridge | 重新安装匹配版本的完整连接助手包。源码维护者需重新构建 runtime、Bridge，再运行源码安装脚本生成完整安装内容。 |
 | Codex / Claude 不可用 | 确认 CLI 已安装且可被 Chrome 启动的进程发现，并先在终端完成一次有效的已认证请求。 |
 | `CLAUDE_AUTH_REQUIRED` | 在终端运行 `claude auth login` 后重试。 |
 | 无法读取 `chrome://` 页面 | 切换到普通 HTTP(S) 页面；浏览器内部页面和文件 URL 不在工具支持范围内。 |

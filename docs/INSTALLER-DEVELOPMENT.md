@@ -33,9 +33,9 @@ node scripts/installer/windows.cjs build/installer-payload
 node scripts/installer/linux.cjs build/installer-payload
 ```
 
-Outputs are in `release/artifacts/`: two architecture-specific macOS DMGs, a Windows EXE, and Linux DEB/RPM packages. Each build produces only its own platform's files. The DMG contains an AppKit installer application; Windows uses a per-user NSIS wizard; Linux uses the system package installer and includes software-manager metadata. The release workflow also retains ZIPs for developers.
+Outputs are in `release/artifacts/`: two architecture-specific macOS DMGs, a Windows EXE, and Linux DEB/RPM packages. Each build produces only its own platform's files. The DMG contains an AppKit installer application; Windows uses a per-user NSIS wizard; Linux uses the system package installer and includes software-manager metadata. The release workflow also produces complete ZIPs using `node scripts/installer/archive.cjs build/installer-payload`. ZIPs include the same private Node; do not zip the bare Rust binary or runtime bundle by hand.
 
-The payload contains the Rust Native Messaging host, the bundled JavaScript agent, a private Node executable, licenses and installer code. Native Messaging starts the host on demand. The host prefers its private Node and adds it to the child process's PATH; it does not install Node globally. Codex and Claude Code remain separate optional applications.
+The payload contains the Rust Native Messaging host, the bundled JavaScript agent, a private Node executable, licenses and installer code. Native Messaging starts the host on demand. The installed host requires its private Node and launches it by absolute path. It preserves the caller's PATH so project commands keep using the user's selected Node. It does not install Node globally or change shell profiles, npm configuration or version-manager settings. Codex and Claude Code remain separate optional applications.
 
 ## Compatibility and runtime updates
 
@@ -60,7 +60,7 @@ The macOS job imports the certificate into a temporary runner keychain, signs th
 
 For Windows, configure `WAM_WINDOWS_CERTIFICATE_BASE64` and `WAM_WINDOWS_CERTIFICATE_PASSWORD` with a supported code-signing PFX. The workflow locates `signtool`, signs and timestamps the EXE, and verifies the result. A hardware- or cloud-backed certificate requires adapting the signing step to that provider. Local builds accept `WAM_WINDOWS_CERTIFICATE` as the PFX path and optionally `WAM_SIGNTOOL`/`WAM_MAKENSIS` as tool paths.
 
-`check-release.cjs` requires all five graphical installers, the extension ZIP, macOS signing/notarization records and a Windows signing record. Unsigned development builds remain available as workflow artifacts. A signing certificate does not guarantee that Windows SmartScreen will immediately recognize a new publisher.
+`check-release.cjs` requires all five graphical installers, the extension ZIP, macOS signing/notarization records, a Windows signing record, and four complete Bridge ZIPs with matching SHA-256 runtime-verification records. Unsigned development builds remain available as workflow artifacts. A signing certificate does not guarantee that Windows SmartScreen will immediately recognize a new publisher.
 
 ## Verify
 
@@ -69,6 +69,7 @@ npm test
 npm run build
 cargo test --manifest-path bridge/Cargo.toml
 node scripts/installer/verify-payload.cjs build/installer-payload
+node scripts/installer/archive.cjs build/installer-payload
 ```
 
 `verify-payload.cjs` uses a temporary home and a PATH without user-installed Node, then exercises the actual Native Messaging hello exchange. On macOS, also test the payload inside the generated app:
@@ -77,6 +78,8 @@ node scripts/installer/verify-payload.cjs build/installer-payload
 node scripts/installer/verify-install.cjs 'build/installers/macos-arm64/image/WebAgentMate Connector.app/Contents/Resources/bridge'
 ```
 
-This installs into an isolated account directory, starts the installed host and agent bundle, upgrades, unregisters, and checks that conversation data remains. Use `macos-x64` for Intel. CI runs these checks on both Mac architectures; Windows CI silently installs the EXE, checks the installed runtime, and uninstalls it. Linux CI builds both formats, checks their metadata, installs and removes the DEB, and checks the installed runtime. RPM installation and interactive installer prompts still require validation on their target desktop systems.
+Payload and extracted ZIP verification exercise the real Bridge with an empty PATH, with another Node selected for project commands, and with the bundled Node removed while a usable system Node exists. Missing bundles must fail instead of borrowing system Node.
+
+Installation verification installs into an isolated account directory, starts the installed host and agent bundle, upgrades, unregisters, and checks that conversation data remains. Use `macos-x64` for Intel. CI runs these checks on both Mac architectures; Windows CI silently installs the EXE, checks the installed runtime, and uninstalls it. Linux CI builds both formats, checks their metadata, installs and removes the DEB, and checks the installed runtime. RPM installation and interactive installer prompts still require validation on their target desktop systems.
 
 Before publishing, open the downloaded installers on clean target systems, complete their graphical flows, and verify **Check again** in Chrome. See [acceptance notes](ACCEPTANCE-v0.6.md) for which checks have actually run; the presence of CI configuration is not a completed platform test.

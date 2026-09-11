@@ -31,7 +31,7 @@ Your conversations stay on your device. The built-in agent runs browser tasks in
 | Claude Code | Your local Claude Code through the Claude Agent SDK | Claude Code CLI installed and authenticated |
 | Built-in agent | Agent loop in the extension using OrcaRouter and browser tools; optional local execution for file/command tools | OrcaRouter browser sign-in in Settings |
 
-Browser tasks with the built-in agent need only the extension and an OrcaRouter connection. Install the Connector to enable **Local files and commands** or select Codex/Claude. Its graphical installers include the required runtime; users do not install Node.js separately. Codex and Claude use their own authentication; OrcaRouter sign-in is only needed for the built-in engine. Model access, quotas, and charges depend on your provider. Details of the native Codex integration are in [Codex compatibility](docs/CODEX-COMPATIBILITY.md).
+Browser tasks with the built-in agent need only the extension and an OrcaRouter connection. Install the Connector to enable **Local files and commands** or select Codex/Claude. Its installers and complete ZIP packages include the required runtime; users do not install Node.js separately. Codex and Claude use their own authentication; OrcaRouter sign-in is only needed for the built-in engine. Model access, quotas, and charges depend on your provider. Details of the native Codex integration are in [Codex compatibility](docs/CODEX-COMPATIBILITY.md).
 
 ## Features
 
@@ -131,7 +131,7 @@ For browser tasks, load `webagentmate-extension.zip` from a published release. F
 | Ubuntu / Debian x64 | `webagentmate-bridge-linux-x64.deb` | Open in the system software installer |
 | Fedora x64 | `webagentmate-bridge-linux-x64.rpm` | Open in the system software installer |
 
-Installers include Node.js and dependency licenses. Users do not run terminal commands or install Node.js. After installation, click **Check again** in the extension; Chrome starts the Connector when needed. macOS requires 13.5+; Linux packages target Ubuntu 22.04+/Debian 12+ and compatible glibc 2.35+ systems.
+All Connector packages include a private Node.js runtime and dependency licenses. The private runtime does not replace your existing Node or modify global PATH. Users do not run terminal commands or install Node.js. After installation, click **Check again** in the extension; Chrome starts the Connector when needed. macOS requires 13.5+; Linux packages target Ubuntu 22.04+/Debian 12+ and compatible glibc 2.35+ systems.
 
 These are the new packaging targets, not a claim that a new release is already published. Missing compatible assets show an unavailable message. Older v0.2.x packages do not include the v0.6 runtime. macOS public releases require Developer ID signing and notarization; Windows public installers require code signing. See [installer development](docs/INSTALLER-DEVELOPMENT.md) and the [user installation guide](docs/BRIDGE-INSTALL.md).
 
@@ -193,8 +193,8 @@ If Claude reports `CLAUDE_AUTH_REQUIRED`, run `claude auth login` in a terminal 
 | Symptom | What to check |
 | --- | --- |
 | Connector not connected / native host not found | Run the installer for your OS and extension ID, then restart Chrome. Confirm the extension and Connector come from the same version. |
-| `NODE_20_REQUIRED` | For a graphical installation, reinstall the matching package to restore its bundled runtime. Source builds require Node.js 20+ in a discoverable location. |
-| `RUNTIME_BUNDLE_MISSING` or an update-Bridge prompt | Run `npm run build:runtime`, rebuild and reinstall the Bridge; for a graphical installation, run the matching installer again. |
+| `NODE_20_REQUIRED` | Reinstall the complete matching Connector package to restore its bundled runtime. Node.js is included. |
+| `RUNTIME_BUNDLE_MISSING` or an update-Bridge prompt | Reinstall the complete matching Connector package. Maintainers using source builds should rebuild the runtime and Bridge, then rerun the source installer to prepare the complete payload. |
 | Codex or Claude is unavailable | Confirm the selected CLI is installed, discoverable outside your shell initialization, and can complete an authenticated request in a terminal. |
 | Page reading fails on `chrome://` or another restricted URL | Switch to a normal HTTP(S) page. Browser internal pages and file URLs are excluded. |
 | A task stops when the sidebar closes | The page that started the run owns its connection. Start subsequent long tasks in the dedicated conversation tab and keep that tab open. |

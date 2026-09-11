@@ -7,20 +7,40 @@ fn bundle_path() -> Option<PathBuf> {
     if installed.is_file() {
         return Some(installed);
     }
+    if !is_development_binary(&executable) {
+        return None;
+    }
     let development = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("runtime-dist/agent.mjs");
     development.is_file().then_some(development)
 }
+fn is_development_binary(executable: &Path) -> bool {
+    executable.starts_with(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target"))
+}
 fn node_path() -> Option<PathBuf> {
     let mut paths = Vec::new();
-    // Release installers carry a private runtime; users do not install Node.
+    // Installed bundles must be self-contained. A missing private Node is a
+    // damaged installation, even when a usable system Node happens to exist.
     if let Ok(executable) = std::env::current_exe() {
         if let Some(directory) = executable.parent() {
-            paths.push(directory.join(if cfg!(windows) {
+            let bundled = directory.join(if cfg!(windows) {
                 "runtime/node/node.exe"
             } else {
                 "runtime/node/bin/node"
-            }));
+            });
+            if directory.join("runtime").exists() || directory.join("bundle.json").exists() {
+                return usable_node(&bundled).then_some(bundled);
+            }
         }
+        if !is_development_binary(&executable) {
+            return None;
+        }
+    }
+    // Only an uninstalled source build may use a developer's Node.
+    if !PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("runtime-dist/agent.mjs")
+        .is_file()
+    {
+        return None;
     }
     if let Some(home) = std::env::var_os("HOME") {
         let home = PathBuf::from(home);
@@ -33,11 +53,11 @@ fn node_path() -> Option<PathBuf> {
         PathBuf::from("/opt/homebrew/bin/node"),
         PathBuf::from("/usr/local/bin/node"),
     ]);
-    paths.into_iter().find(|path| {
-        if !path.is_file() {
-            return false;
-        }
-        probe_cli(path)
+    paths.into_iter().find(|path| usable_node(path))
+}
+fn usable_node(path: &Path) -> bool {
+    path.is_file()
+        && probe_cli(path)
             .ok()
             .and_then(|version| {
                 version
@@ -48,7 +68,6 @@ fn node_path() -> Option<PathBuf> {
                     .ok()
             })
             .is_some_and(|major| major >= 20)
-    })
 }
 pub fn available() -> bool {
     bundle_path().is_some() && node_path().is_some()
@@ -58,22 +77,15 @@ pub fn available() -> bool {
 // which cancels pending approvals/model requests and terminates owned children.
 pub fn serve(request: &Request, reader: &mut impl Read) -> BridgeResult<()> {
     let bundle = bundle_path().ok_or_else(|| BridgeError::new("RUNTIME_BUNDLE_MISSING"))?;
-    let node = node_path().ok_or_else(|| BridgeError::new("NODE_20_REQUIRED"))?;
+    let node = node_path().ok_or_else(|| BridgeError::new("RUNTIME_BUNDLE_MISSING"))?;
     let dirs = ProjectDirs::from("ai", "WebAgentMate", "WebAgentMate")
         .ok_or_else(|| BridgeError::new("DATA_DIRECTORY_UNAVAILABLE"))?;
     let workspace = dirs.data_local_dir().join("workspace");
     fs::create_dir_all(&workspace).map_err(io_error)?;
     set_private_directory_permissions(&workspace)?;
     let mut command = Command::new(&node);
-    if let Some(directory) = node.parent() {
-        let mut paths = vec![directory.to_path_buf()];
-        paths.extend(std::env::split_paths(
-            &std::env::var_os("PATH").unwrap_or_default(),
-        ));
-        if let Ok(path) = std::env::join_paths(paths) {
-            command.env("PATH", path);
-        }
-    }
+    // Use the private executable directly; project commands and native agents
+    // keep the caller's PATH and therefore its selected Node version.
     command
         .arg(bundle)
         .env("WAM_WORKSPACE", &workspace)

@@ -1,8 +1,8 @@
 # Install Connector / 安装连接助手
 
-Connector installers include the runtime. You do not need a terminal or a separate Node.js installation. The built-in browser agent does not need Connector.
+All Connector packages, including ZIPs, include a private runtime. It does not replace an existing Node installation or change global PATH. Graphical installation requires neither a terminal nor a separate Node.js installation. The built-in browser agent does not need Connector.
 
-连接助手 安装器已包含所需运行环境，无需执行命令或单独安装 Node.js。内置智能体的网页任务无需 连接助手。
+连接助手的安装器和完整 ZIP 包都包含独立的运行环境，不替换已有 Node，也不修改全局 PATH。使用图形安装器时，无需执行命令或单独安装 Node.js。内置智能体的网页任务无需 连接助手。
 
 ## Download / 下载
 
