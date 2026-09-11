@@ -70,9 +70,7 @@ async function verifyPayload(payload) {
     await fs.copyFile(process.execPath, userNode);
     const userHash = createHash("sha256").update(await fs.readFile(userNode)).digest("hex");
     await fs.writeFile(path.join(probe, "runtime/agent.mjs"), `import { spawnSync } from 'node:child_process';
-const shell = process.platform === 'win32' ? process.env.SystemRoot + '/System32/cmd.exe' : '/bin/sh';
-const args = process.platform === 'win32' ? ['/d', '/s', '/c', 'node --version'] : ['-c', 'node --version'];
-const result = spawnSync(shell, args, { encoding: 'utf8' });
+const result = spawnSync('node --version', { shell: true, encoding: 'utf8' });
 console.log(JSON.stringify({ version: process.version, executable: process.execPath, path: process.env.PATH, userNode: result.stdout?.trim(), status: result.status, error: result.error?.message, stderr: result.stderr }));
 `);
     const result = await request(path.join(probe, binaryName), meta.extensionId, { ...env, PATH: userBin }, "runtime.open");
