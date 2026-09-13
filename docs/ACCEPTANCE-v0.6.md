@@ -274,3 +274,12 @@ ZIP 完整性和必要文件检查通过。Bridge 包包含可执行文件、安
 - 跨平台最终结果：[Release 34758163204，第 2 次尝试](https://github.com/wintc23/web-agent-mate/actions/runs/34758163204/attempts/2) 全部通过，Bridge 代码为 `37340dc`；两个 Mac 的 DMG 安装升级、Windows EXE 安装卸载、Linux DEB 安装卸载及四个平台实际 ZIP 更新/回滚通过。RPM 完成构建和摘要检查，尚未执行图形化安装。`publish` 因手动验收而跳过，未发布新版本。
 - Windows 首次完整流水线在更新就绪检查中等待 45 秒后超时；编译、安装和卸载均已通过。新增底层错误记录和单平台验证工作流后，[Windows 专项 34758515051](https://github.com/wintc23/web-agent-mate/actions/runs/34758515051) 通过，相同原始代码的完整 Windows 流水线重跑也通过。没有复现或确认首次超时的根因，不能将重跑通过视为原因已修复。
 - 扩展安装指南及来源校验测试更新后的 [CI 34758510546](https://github.com/wintc23/web-agent-mate/actions/runs/34758510546) 通过。更新设置界面仍没有实际 Chrome 操作验收；四个平台更新验证均使用真实本地程序与隔离的签名/网络测试数据。
+
+
+## 2026-09-13：v0.6.0 发布准备
+
+- 按用户的发布要求，对提交 `98b3f9313facf75d2a7701f98e62fc5ac02fa0ca` 运行一次完整 [Release 验收](https://github.com/wintc23/web-agent-mate/actions/runs/34759420068)。扩展、macOS x64/ARM64、Windows x64、Linux x64 全部通过；Windows 更新检查本次未超时。工作流为手动构建，公开发布步骤未运行。
+- 已创建 GitHub v0.6.0 发布草稿，目标锁定上述提交。草稿不代表 GitHub 已公开发布，也不代表已提交 Chrome Web Store。
+- GitHub Actions 仅配置了自动更新用的 `WAM_UPDATE_SIGNING_KEY`；本机代码签名身份检查返回 0 个有效身份。macOS Developer ID 签名/Apple 公证和 Windows 发布者签名仍未配置，现有 `scripts/installer/check-release.cjs` 会拒绝公开发布这些开发安装包。
+- 下载上述同一工作流的全部产物，四平台 ZIP 的运行环境验证记录、版本/架构/私有 Node 版本与 SHA-256 全部匹配；扩展 ZIP 含 16 个文件，Manifest V3、图标、后台入口和侧边栏文件检查通过。已为这批实际 ZIP 生成并验证 Ed25519 更新清单，并为 11 个发布文件生成 SHA-256。
+- 对实际产物执行正式发布检查，按预期在 `webagentmate-bridge-macos-arm64.dmg` 缺少签名/公证处失败；未修改签名记录或绕过发布门槛。
