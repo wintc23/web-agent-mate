@@ -151,10 +151,10 @@ jobs:
           sudo dpkg --install release/artifacts/webagentmate-bridge-linux-x64.deb
           node scripts/installer/verify-payload.cjs /opt/webagentmate-bridge
           sudo dpkg --remove webagentmate-bridge
-      - name: Verify automatic updates and rollback
-        run: node scripts/installer/verify-update.cjs build/installer-payload
       - name: Build and verify complete Bridge ZIP
         run: node scripts/installer/archive.cjs build/installer-payload
+      - name: Verify automatic updates and rollback
+        run: node scripts/installer/verify-update.cjs build/installer-payload release/artifacts/${{ matrix.artifact }}.zip
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}

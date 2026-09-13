@@ -143,7 +143,13 @@ pub fn check(params: &Value) -> BridgeResult<Value> {
         use std::os::windows::process::CommandExt;
         command.creation_flags(0x08000000 | 0x00000200); // no console, independent process group
     }
-    // The worker retains its own OS lock and process; no service-worker timer owns it.
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    // The worker retains its own OS lock and process group; closing the native
+    // port or terminating its host group must not terminate a staged update.
     command.spawn().map_err(io_error)?;
     status()
 }

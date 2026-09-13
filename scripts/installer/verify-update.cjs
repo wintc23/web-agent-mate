@@ -9,7 +9,7 @@ const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const { zipSync } = require('fflate');
 const { install } = require('./setup.cjs');
-const { check } = require('./updater.cjs');
+const { check, extract } = require('./updater.cjs');
 const run = promisify(execFile);
 const read = file => fs.readFile(file, 'utf8').then(JSON.parse);
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -29,6 +29,7 @@ async function files(directory, prefix = '') {
 }
 (async () => {
   const payload = path.resolve(process.argv[2] || 'build/installer-payload');
+  const archive = process.argv[3] ? await fs.readFile(path.resolve(process.argv[3])) : undefined;
   const meta = await read(path.join(payload, 'bundle.json'));
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'wam-upgrade space-'));
   const root = path.join(temporary, 'installation');
@@ -40,7 +41,7 @@ async function files(directory, prefix = '') {
   let holder, updating;
   async function hold(method = "bridge.hello", params = {}) {
     const registered = await read(target.manifests[0]);
-    holder = spawn(registered.path, [`chrome-extension://${meta.extensionId}/`], { env, stdio: ['pipe', 'pipe', 'pipe'] });
+    holder = spawn(registered.path, [`chrome-extension://${meta.extensionId}/`], { env, detached: process.platform !== 'win32', stdio: ['pipe', 'pipe', 'pipe'] });
     const reply = new Promise((resolve, reject) => {
       let buffer = Buffer.alloc(0);
       const timeout = setTimeout(() => reject(new Error('Launcher did not respond')), 15_000);
@@ -59,17 +60,22 @@ async function files(directory, prefix = '') {
     assert.equal(response.ok, true);
     if (method === "bridge.hello") assert.equal(response.result.autoUpdate, true);
   }
-  async function release() {
+  async function release(force = false) {
     if (!holder) return;
     const child = holder; holder = undefined;
     const done = new Promise(resolve => child.once('exit', resolve));
-    child.stdin.end(); await done;
+    child.stdin.end();
+    if (force) {
+      if (process.platform !== 'win32') process.kill(-child.pid, 'SIGKILL');
+      else child.kill();
+    }
+    await done;
   }
   async function signedArchive(broken = false) {
-    const contents = await files(payload);
+    const contents = archive ? extract(archive) : await files(payload);
     contents['update-key.json'] = Buffer.from(JSON.stringify(publicKey));
     if (broken) contents['runtime/agent.mjs'] = Buffer.from('throw new Error("health failure fixture");');
-    const bytes = Buffer.from(zipSync(contents, { level: 1 }));
+    const bytes = archive && !broken ? archive : Buffer.from(zipSync(contents, { level: 1 }));
     const platform = { darwin: 'macos', win32: 'windows', linux: 'linux' }[meta.platform];
     const data = Buffer.from(JSON.stringify({ schema: 1, protocolVersion: 1, version: meta.version, extensionVersion: meta.version, assets: { [`${meta.platform}-${meta.arch}`]: { url: `https://github.com/wintc23/web-agent-mate/releases/download/v${meta.version}/webagentmate-bridge-${platform}-${meta.arch}.zip`, size: bytes.length, sha256: crypto.createHash('sha256').update(bytes).digest('hex') } } }));
     return { bytes, manifest: { payload: data.toString('base64'), signature: crypto.sign(null, data, pair.privateKey).toString('base64') } };
@@ -133,7 +139,7 @@ async function files(directory, prefix = '') {
     // The background worker must survive the initiating native port closing.
     await fs.rm(path.join(root, 'updates/status.json'));
     await hold('bridge.update.check', { extensionVersion: meta.version, force: true });
-    await release();
+    await release(true);
     await until(async () => (await read(path.join(root, 'updates/status.json')).catch(() => ({}))).phase === 'current', 'Detached updater did not complete after native port closed');
     assert.equal((await read(path.join(root, 'updates/status.json'))).phase, 'current');
 

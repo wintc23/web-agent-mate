@@ -6,7 +6,7 @@ Last updated: 2026-09-11
 
 **Status:** package and listing prepared locally; not submitted. An authenticated Chrome Web Store dashboard connection is still required. Do not describe the extension as available in the Store until the public listing is verified.
 
-Prepared upload: `release/artifacts/webagentmate-chrome-0.6.0.zip` (506,809 bytes, 16 runtime files). SHA-256: `07b44cc68153d329386dffe74340aa52b3d3ab06b6705870cbbc0132da5219b6`. The archive has `manifest.json` at its root and excludes source, screenshots, documentation, source maps, credentials and desktop installers.
+Prepared upload: `release/artifacts/webagentmate-chrome-0.6.0.zip` (514,488 bytes, 16 runtime files). SHA-256: `493483b9fb1eb3bb681e8675bedc719e14b73027f3afb79a18d3e0ce9b72ba5e`. The archive has `manifest.json` at its root and excludes source, screenshots, documentation, source maps, credentials and desktop installers.
 
 The portfolio page at https://wintc.top/products/webagentmate is live as a development preview. It currently links to source installation rather than an unverified Store URL.
 
