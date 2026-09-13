@@ -182,6 +182,7 @@ async function check(root, source, target, force = false, dependencies = {}) {
     const binary = path.join(source, process.platform === 'win32' ? 'webagentmate-bridge.exe' : 'webagentmate-bridge');
     await (dependencies.activate || (async () => run(binary, ['--apply-update', path.basename(stage), target], { windowsHide: true, maxBuffer: 16_384 })))();
   } catch (error) {
+    dependencies.onError?.(error);
     const state = await read(path.join(root, 'updates/status.json')).catch(() => ({}));
     if (state.phase !== 'rolled_back') await status(root, { phase: error.message === 'UPDATE_DISABLED' ? 'idle' : 'error', targetVersion: target, lastChecked: Date.now(), error: /^UPDATE_[A-Z_]+$/.test(error.message) ? error.message : 'UPDATE_FAILED' });
   } finally { if (stage) await fs.rm(stage, { recursive: true, force: true }).catch(() => {}); }

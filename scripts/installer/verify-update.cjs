@@ -118,8 +118,8 @@ async function files(directory, prefix = '') {
     const fetcher = async url => url.endsWith('webagentmate-update.json') ? Response.json(good.manifest) : new Response(good.bytes);
     // Download through the real updater, then the real native executable owns
     // the exclusive apply lock and executes the packaged updater bundle.
-    updating = check(root, installed, meta.version, true, { fetch: fetcher });
-    await until(async () => (await read(path.join(root, 'updates/status.json')).catch(() => ({}))).phase === 'waiting_idle', 'Update never became ready');
+    updating = check(root, installed, meta.version, true, { fetch: fetcher, onError: error => console.error("Download/check failure:", error) });
+    await until(async () => { const state = await read(path.join(root, 'updates/status.json')).catch(() => ({})); if (['error', 'rolled_back', 'updated'].includes(state.phase)) throw new Error(`Unexpected update state before releasing lease: ${JSON.stringify(state)}`); return state.phase === 'waiting_idle'; }, 'Update never became ready');
     await pause(600);
     assert.deepEqual(await read(path.join(root, 'active.json')), before, 'Active native ports must prevent switching versions');
     await release();

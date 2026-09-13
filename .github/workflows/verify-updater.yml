@@ -1,0 +1,37 @@
+name: Verify native updater
+
+on:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: Target runner for native updater regression checks
+        type: choice
+        default: windows-latest
+        options: [windows-latest, ubuntu-22.04, macos-15, macos-15-intel]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:runtime
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --manifest-path bridge/Cargo.toml --release
+      - name: Prepare complete native package
+        run: node -e "require('./scripts/installer/prepare.cjs').prepare({platform:process.platform,arch:process.arch,binary:'bridge/target/release/webagentmate-bridge'+(process.platform==='win32'?'.exe':''),out:'build/installer-payload'}).catch(e=>{console.error(e);process.exitCode=1})"
+      - run: node scripts/installer/archive.cjs build/installer-payload
+      - name: Verify real updater and archive
+        run: node -e "const platform={win32:'windows',darwin:'macos',linux:'linux'}[process.platform];require('node:child_process').execFileSync(process.execPath,['scripts/installer/verify-update.cjs','build/installer-payload','release/artifacts/webagentmate-bridge-'+platform+'-'+process.arch+'.zip'],{stdio:'inherit'})"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: updater-verification-${{ runner.os }}-${{ runner.arch }}
+          path: release/artifacts/*
