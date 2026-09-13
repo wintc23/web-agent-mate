@@ -271,3 +271,6 @@ ZIP 完整性和必要文件检查通过。Bridge 包包含可执行文件、安
 - 110 项 Node 测试、9 项 Rust 测试、扩展和 runtime 构建通过。本地真实 macOS Intel payload、DMG 内安装/升级及完整 ZIP 的私有 Node/PATH 隔离验证通过。更新验证覆盖并发请求只启动一个 worker、任务连接阻止切换、强制终止原生宿主进程组后 worker 继续运行、损坏 runtime 回滚、未确认切换恢复以及用户数据保留。
 - 发布公钥已固定在 payload；私钥未进入仓库，已配置 GitHub Actions 的 `WAM_UPDATE_SIGNING_KEY`。发布流程生成并校验签名清单，仍保留 macOS 签名/公证及 Windows 签名要求。
 - 本次没有使用 Playwriter。当前外部会话未接入 WebAgentMate 浏览器接口，新增设置界面的验证为类型检查和构建；没有声称完成真实 Chrome 设置界面验收。
+- 跨平台最终结果：[Release 34758163204，第 2 次尝试](https://github.com/wintc23/web-agent-mate/actions/runs/34758163204/attempts/2) 全部通过，Bridge 代码为 `37340dc`；两个 Mac 的 DMG 安装升级、Windows EXE 安装卸载、Linux DEB 安装卸载及四个平台实际 ZIP 更新/回滚通过。RPM 完成构建和摘要检查，尚未执行图形化安装。`publish` 因手动验收而跳过，未发布新版本。
+- Windows 首次完整流水线在更新就绪检查中等待 45 秒后超时；编译、安装和卸载均已通过。新增底层错误记录和单平台验证工作流后，[Windows 专项 34758515051](https://github.com/wintc23/web-agent-mate/actions/runs/34758515051) 通过，相同原始代码的完整 Windows 流水线重跑也通过。没有复现或确认首次超时的根因，不能将重跑通过视为原因已修复。
+- 扩展安装指南及来源校验测试更新后的 [CI 34758510546](https://github.com/wintc23/web-agent-mate/actions/runs/34758510546) 通过。更新设置界面仍没有实际 Chrome 操作验收；四个平台更新验证均使用真实本地程序与隔离的签名/网络测试数据。
