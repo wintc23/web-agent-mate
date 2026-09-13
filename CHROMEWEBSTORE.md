@@ -4,11 +4,15 @@ Last updated: 2026-09-13
 
 ## Submission status and listing fields
 
-**Status:** package and listing prepared locally; not submitted. An authenticated Chrome Web Store dashboard connection is still required. Do not describe the extension as available in the Store until the public listing is verified.
+**Status:** version **0.6.0 submitted for review on 2026-09-13**. The authenticated [Developer Dashboard](https://chrome.google.com/webstore/devconsole/aa0b0589-7124-48d0-a575-987ae8c2241d/lmlkkallnnjijicmfmfdelnamcnhflfg/edit/status) reports **Pending review / 待审核**. Automatic publication after approval is enabled. The extension is not yet publicly available in the Store.
+
+Submission updated the existing WebMate 0.1.0 draft to WebAgentMate 0.6.0, preserving the extension ID. English and Simplified Chinese descriptions, the icon, two global English screenshots and three localized Chinese screenshots were saved. All permission justifications, the five declared data categories, privacy-policy URL and reviewer instructions were saved. Distribution is public in all available regions. Google displayed the broad-host-permission review notice before accepting the submission.
+
+The Store's homepage validator timed out on `https://wintc.top/products/webagentmate`. The submitted homepage therefore uses the GitHub project page; this passed the Store's submission validation.
 
 GitHub v0.6.0 has a [release draft](https://github.com/wintc23/web-agent-mate/releases) targeting `98b3f9313facf75d2a7701f98e62fc5ac02fa0ca`. It is not public; macOS Developer ID signing/notarization and Windows publisher signing remain unconfigured. Creating this draft does not submit the extension to the Chrome Web Store.
 
-Prepared upload: `release/artifacts/webagentmate-chrome-0.6.0.zip` (517,996 bytes, 16 runtime files). SHA-256: `45e6b47c6712c763d1c325e2bb6100ad7229e75a07634176b08a8c38f86ea6e6`. The archive has `manifest.json` at its root and excludes source, screenshots, documentation, source maps, credentials and desktop installers.
+Submitted package: `release/artifacts/webagentmate-chrome-0.6.0.zip` (517,996 bytes, 16 runtime files). SHA-256: `45e6b47c6712c763d1c325e2bb6100ad7229e75a07634176b08a8c38f86ea6e6`. The archive has `manifest.json` at its root and excludes source, screenshots, documentation, source maps, credentials and desktop installers. The dashboard's Package page confirmed version 0.6.0 and the current permissions, including `alarms`.
 
 The portfolio page at https://wintc.top/products/webagentmate is live as a development preview. It currently links to source installation rather than an unverified Store URL.
 
@@ -18,13 +22,13 @@ The portfolio page at https://wintc.top/products/webagentmate is live as a devel
 | Version | 0.6.0 |
 | Short description | AI assistant for understanding and working with web pages. |
 | Primary language | English (manifest default); Chinese listing copy below |
-| Category | Productivity; match the available category in the dashboard |
-| Homepage | https://wintc.top/products/webagentmate |
+| Category | Productivity → Tools (效率 → 工具 in the dashboard) |
+| Homepage | https://github.com/wintc23/web-agent-mate |
 | Support | https://github.com/wintc23/web-agent-mate/issues |
 | Privacy policy | https://github.com/wintc23/web-agent-mate/blob/main/PRIVACY.md |
 | Distribution | Public, all available regions; publish automatically after approval |
-| Publisher and contact email | Preserve the existing verified developer-account values; account not accessed in this run |
-| Development extension ID | lmlkkallnnjijicmfmfdelnamcnhflfg; compare with the dashboard before submission |
+| Publisher and contact email | Existing developer-account values preserved |
+| Store extension ID | lmlkkallnnjijicmfmfdelnamcnhflfg; confirmed against the existing dashboard item |
 
 ### English detailed description
 
@@ -84,7 +88,7 @@ WebAgentMate 不运营应用服务器，也不包含分析统计 SDK。会话和
 反馈与建议：https://github.com/wintc23/web-agent-mate/issues
 ```
 
-### Prepared graphics
+### Submitted graphics
 
 All screenshots below are actual captures of the unpacked 0.6.0 build in an isolated Chrome profile, with no user credentials or private conversations. Workspace screenshots show an unsent task draft. Model availability and prices reflect the live catalog at capture time.
 
@@ -166,6 +170,8 @@ Refresh all store screenshots for 0.6.0. Include the Agent avatar, an in-progres
 Capture the vertical Settings navigation in wide and narrow layouts, and the separate Local section with Bridge installation and connection checks. The Models screenshots should show the regular-weight referral and commission disclosure above the full-width OrcaRouter sign-in button in both light and dark themes. Refresh composer screenshots to show the explicit permission label and the clickable Settings connection reminder.
 
 ## Version history
+
+- 0.6.0 (submitted for review, 2026-09-13) — Updated the existing Store item with the verified extension ZIP, English/Chinese listing, five screenshots, permissions/privacy disclosures and reviewer instructions. Dashboard confirmed Pending review; automatic publication after approval is enabled. Store homepage changed to the GitHub repository after the portfolio URL failed Google's connection check.
 
 - 0.6.0 (development, 2026-09-13) — Added automatic Connector updates with Ed25519 release signatures, full private-runtime packages, idle-only activation, rollback, and an update switch/status in all six languages. Added `alarms` for six-hour checks and updated PRIVACY.md. Older Connector installations require one installation of the new updater-capable package. Extension JavaScript remains bundled in the Chrome Web Store package; downloaded code runs only in the separately installed native host.
 
