@@ -29,7 +29,7 @@ Supports Linux x64: Ubuntu 22.04+, Debian 12+, or compatible systems with glibc 
 
 ## Start, update and remove
 
-Chrome starts Connector when needed. If it cannot connect after installation, restart Chrome and check again. To update, download and open the new installer. Codex and Claude Code still need their own applications and sign-in.
+Chrome starts Connector when needed. If it cannot connect after installation, restart Chrome and check again. The new Connector updates automatically after local tasks finish and restores the previous version if startup checks fail. Pause or check updates in **Settings → Local connection → Automatic Connector updates**. Older installations need a one-time installation of the new Connector. Codex and Claude Code still need their own applications and sign-in.
 
 To remove Connector, reopen the Mac installer and choose **Uninstall**, use **Windows Settings → Apps**, or use your Linux software manager. Conversations and created files are preserved. Remove the extension separately in Chrome.`,
   zh_CN: `连接助手让 WebAgentMate 使用电脑中的文件、运行命令，并连接 Codex 或 Claude Code。仅处理网页无需安装。打开安装器即可完成配置。
@@ -60,7 +60,7 @@ To remove Connector, reopen the Mac installer and choose **Uninstall**, use **Wi
 
 ## 启动、更新与卸载
 
-Chrome 会在需要时自动启动连接助手。安装后仍无法连接时，请重启 Chrome 并重新检测。更新时下载并打开新版安装器即可。Codex / Claude Code 仍需各自的应用及登录。
+Chrome 会在需要时自动启动连接助手。安装后仍无法连接时，请重启 Chrome 并重新检测。新版连接助手会在本地任务结束后自动更新，启动检查失败时恢复旧版。可在**设置 → 本地连接 → 自动更新连接助手**中暂停或检查更新。旧版需先安装一次新版。Codex / Claude Code 仍需各自的应用及登录。
 
 卸载时，macOS 重新打开安装器选择**卸载**，Windows 使用**设置 → 应用**，Linux 使用软件管理器。会话和已创建的文件会保留。扩展需在 Chrome 中单独移除。`,
   zh_TW: `連線助手讓 WebAgentMate 使用電腦中的檔案、執行指令，並連接 Codex 或 Claude Code。僅處理網頁不需安裝。開啟安裝程式即可完成設定。
@@ -91,7 +91,7 @@ Chrome 会在需要时自动启动连接助手。安装后仍无法连接时，�
 
 ## 啟動、更新與解除安裝
 
-Chrome 會在需要時自動啟動連線助手。安裝後仍無法連線時，請重新啟動 Chrome 並重新偵測。更新時下載並開啟新版安裝程式即可。Codex / Claude Code 仍需要各自的應用程式及登入。
+Chrome 會在需要時自動啟動連線助手。安裝後仍無法連線時，請重新啟動 Chrome 並重新偵測。新版連線助手會在本機任務結束後自動更新，啟動檢查失敗時還原舊版。可在**設定 → 本機連線 → 自動更新連線助手**中暫停或檢查更新。舊版需先安裝一次新版。Codex / Claude Code 仍需要各自的應用程式及登入。
 
 移除連線助手時，macOS 重新開啟安裝程式選擇**卸載**，Windows 使用**設定 → 應用程式**，Linux 使用軟體管理員。對話與已建立的檔案會保留。擴充功能需在 Chrome 中另外移除。`,
   ja: `接続アシスタントを使うと、WebAgentMate からパソコンのファイルやコマンド、Codex、Claude Code を利用できます。ブラウザーのタスクには不要です。必要なものはインストーラーに含まれています。
@@ -122,7 +122,7 @@ Linux x64 に対応しています。Ubuntu 22.04 以降、Debian 12 以降、�
 
 ## 起動・更新・削除
 
-Chrome が必要に応じて 接続アシスタント を起動します。インストール後に接続できない場合は Chrome を再起動して再確認してください。更新するには新しいインストーラーをダウンロードして開きます。Codex と Claude Code には、それぞれのアプリケーションとログインが必要です。
+Chrome が必要に応じて 接続アシスタント を起動します。インストール後に接続できない場合は Chrome を再起動して再確認してください。新しいコネクターはローカルタスクの終了後に自動更新し、起動確認に失敗した場合は以前のバージョンに戻します。ローカル接続の設定で更新の一時停止や確認ができます。以前のコネクターは最初に一度、新しいインストーラーで更新してください。Codex と Claude Code には、それぞれのアプリケーションとログインが必要です。
 
 削除するには Mac のインストーラーで **Uninstall**（アンインストール）、Windows の**設定 → アプリ**、または Linux のソフトウェアマネージャーを使います。会話と作成したファイルは保持されます。拡張機能は Chrome で別途削除してください。`,
   de: `Mit dem Verbindungshelfer kann WebAgentMate lokale Dateien und Befehle nutzen sowie Codex oder Claude Code verbinden. Für Browser-Aufgaben ist er nicht nötig. Alles Erforderliche ist im Installationspaket enthalten.
@@ -153,7 +153,7 @@ Unterstützt wird Linux x64: Ubuntu 22.04+, Debian 12+ oder kompatible Systeme m
 
 ## Starten, aktualisieren und entfernen
 
-Chrome startet den Verbindungshelfer bei Bedarf. Falls nach der Installation keine Verbindung möglich ist, starten Sie Chrome neu und prüfen Sie erneut. Für Updates laden Sie das neue Installationspaket herunter und öffnen es. Codex und Claude Code benötigen weiterhin ihre eigenen Anwendungen und Anmeldungen.
+Chrome startet den Verbindungshelfer bei Bedarf. Falls nach der Installation keine Verbindung möglich ist, starten Sie Chrome neu und prüfen Sie erneut. Der neue Connector aktualisiert sich nach Abschluss lokaler Aufgaben automatisch und stellt bei fehlgeschlagenen Startprüfungen die vorherige Version wieder her. Unter Lokale Verbindung können Sie Updates pausieren oder prüfen. Ältere Installationen müssen einmal mit dem neuen Installer aktualisiert werden. Codex und Claude Code benötigen weiterhin ihre eigenen Anwendungen und Anmeldungen.
 
 Zum Entfernen wählen Sie im Mac-Installationsprogramm **Uninstall** (Deinstallieren), öffnen unter Windows **Einstellungen → Apps** oder verwenden die Linux-Softwareverwaltung. Gespräche und erstellte Dateien bleiben erhalten. Die Erweiterung entfernen Sie separat in Chrome.`,
   pt_BR: `O assistente de conexão permite que o WebAgentMate use arquivos e comandos do computador e conecte Codex ou Claude Code. Tarefas no navegador não precisam dele. O instalador inclui tudo o que é necessário.
@@ -184,7 +184,7 @@ Compatível com Linux x64: Ubuntu 22.04+, Debian 12+ ou sistemas compatíveis co
 
 ## Iniciar, atualizar e remover
 
-O Chrome inicia o assistente de conexão quando necessário. Se não conseguir conectar após a instalação, reinicie o Chrome e verifique novamente. Para atualizar, baixe e abra o novo instalador. Codex e Claude Code ainda precisam de seus próprios aplicativos e autenticação.
+O Chrome inicia o assistente de conexão quando necessário. Se não conseguir conectar após a instalação, reinicie o Chrome e verifique novamente. O novo Connector se atualiza após as tarefas locais terminarem e restaura a versão anterior se a verificação de inicialização falhar. Pause ou verifique atualizações nas configurações de Conexão local. Instalações antigas precisam instalar o novo Connector uma vez. Codex e Claude Code ainda precisam de seus próprios aplicativos e autenticação.
 
 Para remover, escolha **Uninstall** (Desinstalar) no instalador do Mac, use **Configurações → Aplicativos** no Windows ou o gerenciador de software do Linux. As conversas e os arquivos criados serão preservados. Remova a extensão separadamente no Chrome.`
 };
