@@ -6,9 +6,9 @@ Last updated: 2026-09-13
 
 **Status:** package and listing prepared locally; not submitted. An authenticated Chrome Web Store dashboard connection is still required. Do not describe the extension as available in the Store until the public listing is verified.
 
-GitHub v0.6.0 has a [release draft](https://github.com/wintc23/web-agent-mate/releases/tag/untagged-2712d88b152e28b2237e) targeting `98b3f9313facf75d2a7701f98e62fc5ac02fa0ca`. It is not public; macOS Developer ID signing/notarization and Windows publisher signing remain unconfigured. Creating this draft does not submit the extension to the Chrome Web Store.
+GitHub v0.6.0 has a [release draft](https://github.com/wintc23/web-agent-mate/releases) targeting `98b3f9313facf75d2a7701f98e62fc5ac02fa0ca`. It is not public; macOS Developer ID signing/notarization and Windows publisher signing remain unconfigured. Creating this draft does not submit the extension to the Chrome Web Store.
 
-Prepared upload: `release/artifacts/webagentmate-chrome-0.6.0.zip` (515,101 bytes, 16 runtime files). SHA-256: `d5620a1626094ea550b19e06573a011d793b6277ebe66c9cc5219ab3e97b2528`. The archive has `manifest.json` at its root and excludes source, screenshots, documentation, source maps, credentials and desktop installers.
+Prepared upload: `release/artifacts/webagentmate-chrome-0.6.0.zip` (517,996 bytes, 16 runtime files). SHA-256: `45e6b47c6712c763d1c325e2bb6100ad7229e75a07634176b08a8c38f86ea6e6`. The archive has `manifest.json` at its root and excludes source, screenshots, documentation, source maps, credentials and desktop installers.
 
 The portfolio page at https://wintc.top/products/webagentmate is live as a development preview. It currently links to source installation rather than an unverified Store URL.
 
