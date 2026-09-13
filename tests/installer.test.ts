@@ -14,8 +14,8 @@ async function fixture(t: TestContext) {
   const source = path.join(home, "source");
   await fs.mkdir(path.join(source, "runtime/node/bin"), { recursive: true });
   await fs.mkdir(path.join(source, "runtime/licenses"), { recursive: true });
-  await fs.writeFile(path.join(source, "bundle.json"), JSON.stringify({ version: "0.6.0", extensionId: "lmlkkallnnjijicmfmfdelnamcnhflfg", platform: "darwin", arch: "x64", nodeVersion: "v24.21.0" }));
-  for (const file of ["webagentmate-bridge", "runtime/agent.mjs", "runtime/node/bin/node", "runtime/licenses/node.txt", "LICENSE"]) await fs.writeFile(path.join(source, file), "new runtime");
+  await fs.writeFile(path.join(source, "bundle.json"), JSON.stringify({ version: "0.6.0", extensionId: "lmlkkallnnjijicmfmfdelnamcnhflfg", platform: "darwin", arch: "x64", nodeVersion: "v24.21.0", autoUpdateProtocol: 1 }));
+  for (const file of ["webagentmate-bridge", "runtime/agent.mjs", "runtime/node/bin/node", "runtime/licenses/node.txt", "LICENSE", "setup.cjs", "webagentmate-launcher", "runtime/updater.cjs", "update-key.json"]) await fs.writeFile(path.join(source, file), "new runtime");
   return { home, source, target: locations("darwin", home) };
 }
 test("GUI install upgrades an existing user installation and leaves conversation data intact", async t => {
@@ -24,11 +24,12 @@ test("GUI install upgrades an existing user installation and leaves conversation
   await fs.mkdir(bin, { recursive: true });
   await fs.writeFile(path.join(bin, "webagentmate-bridge"), "old");
   await fs.writeFile(path.join(target.root, "conversations.sqlite"), "keep");
-  await install(source, { platform: "darwin", locations: target });
+  const installed = await install(source, { platform: "darwin", locations: target });
   const value = JSON.parse(await fs.readFile(target.manifests[0], "utf8"));
-  assert.equal(value.path, path.join(bin, "webagentmate-bridge"));
+  assert.equal(value.path, path.join(target.root, "launcher/webagentmate-launcher"));
+  assert.equal(JSON.parse(await fs.readFile(path.join(target.root, "active.json"), "utf8")).current, path.relative(target.root, installed).split(path.sep).join("/"));
   assert.deepEqual(value.allowed_origins, ["chrome-extension://lmlkkallnnjijicmfmfdelnamcnhflfg/"]);
-  assert.equal(await fs.readFile(path.join(bin, "runtime/node/bin/node"), "utf8"), "new runtime");
+  assert.equal(await fs.readFile(path.join(installed, "runtime/node/bin/node"), "utf8"), "new runtime");
   await install(source, { platform: "darwin", locations: target });
   await unregister({ platform: "darwin", locations: target });
   await assert.rejects(fs.access(target.manifests[0]));
@@ -47,6 +48,7 @@ test("incomplete or wrong-platform payloads cannot replace a working installatio
 test("Windows registration uses the installed path and per-user registry without shell interpolation", async t => {
   const { home, source } = await fixture(t);
   await fs.writeFile(path.join(source, "webagentmate-bridge.exe"), "fixture");
+  await fs.writeFile(path.join(source, "webagentmate-launcher.exe"), "fixture");
   await fs.writeFile(path.join(source, "runtime/node/node.exe"), "fixture");
   const metadata = JSON.parse(await fs.readFile(path.join(source, "bundle.json"), "utf8"));
   await fs.writeFile(path.join(source, "bundle.json"), JSON.stringify({ ...metadata, platform: "win32" }));
@@ -55,7 +57,7 @@ test("Windows registration uses the installed path and per-user registry without
   await register(source, { platform: "win32", locations: target, exec: (...args: any[]) => { calls.push(args); } });
   assert.equal(calls.length, 3);
   assert(calls.every(([program, args]) => program === "reg.exe" && args[1].startsWith("HKCU\\") && args.includes(target.manifests[0])));
-  assert.equal(JSON.parse(await fs.readFile(target.manifests[0], "utf8")).path, path.join(source, "webagentmate-bridge.exe"));
+  assert.equal(JSON.parse(await fs.readFile(target.manifests[0], "utf8")).path, path.join(source, "webagentmate-launcher.exe"));
 });
 test("package validation rejects missing Node and its license even when system Node is available", async t => {
   const { source } = await fixture(t);
@@ -84,7 +86,9 @@ test("publication refuses a Bridge ZIP changed after runtime verification", asyn
     if (/\.(dmg|exe)$/.test(name)) await fs.writeFile(path.join(output, `${name}.release.json`), JSON.stringify({ version, signed: true, notarized: true }));
   }
   const check = () => spawnSync(process.execPath, ["scripts/installer/check-release.cjs", output], { encoding: "utf8", env: { ...process.env, GITHUB_REF_NAME: `v${version}` } });
-  assert.equal(check().status, 0);
+  const unsigned = check();
+  assert.notEqual(unsigned.status, 0);
+  assert.match(unsigned.stderr, /webagentmate-update.json/);
   await fs.appendFile(path.join(output, "webagentmate-bridge-macos-x64.zip"), "changed after verification");
   const rejected = check();
   assert.notEqual(rejected.status, 0);

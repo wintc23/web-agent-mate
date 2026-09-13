@@ -19,3 +19,5 @@ for (const file of ["webagentmate-bridge-macos-arm64.dmg", "webagentmate-bridge-
     if (!status.signed || file.endsWith(".dmg") && !status.notarized) throw new Error(`${file} requires signing${file.endsWith(".dmg") ? " and Apple notarization" : ""} before public release. Configure the release secrets; development artifacts remain available from the workflow run.`);
   }
 }
+
+require("./sign-update.cjs").verifyRelease(directory);

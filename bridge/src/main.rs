@@ -10,6 +10,7 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 mod runtime;
+mod updates;
 mod workspace;
 
 const PROTOCOL_VERSION: u32 = 1;
@@ -90,7 +91,11 @@ impl Bridge {
                 "platform": std::env::consts::OS,
                 "origin": self.origin,
                 "runtimeV2": runtime::available(),
+                "autoUpdate": updates::managed_root().is_some(),
             })),
+            "bridge.update.status" => updates::status(),
+            "bridge.update.check" => updates::check(&request.params),
+            "bridge.update.configure" => updates::configure(&request.params),
             "conversations.create" => self.create_conversation(&request.params),
             "conversations.list" => self.list_conversations(&request.params),
             "conversations.get" => self.get_conversation(&request.params),
@@ -784,6 +789,9 @@ fn write_response(writer: &mut impl Write, response: &Response) -> BridgeResult<
 }
 
 fn main() {
+    if let Some(code) = updates::entry() {
+        std::process::exit(code);
+    }
     let origin = std::env::args().nth(1).unwrap_or_default();
     let mut bridge = match Bridge::new(origin) {
         Ok(value) => value,

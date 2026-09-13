@@ -39,9 +39,9 @@ If a compatible installer has not been published, the extension says so and keep
 
 ## Start and update / 启动与更新
 
-Chrome starts Connector automatically when the extension connects. If it is still unavailable after installation, restart Chrome and check again. To update, download and open the new installer. Codex and Claude Code still need their own applications and authentication.
+Chrome starts Connector automatically when the extension connects. If it is still unavailable after installation, restart Chrome and check again. Automatic updates are enabled after installing the new Connector. It downloads the version matching the extension, waits for local tasks to finish, and restores the previous version if startup checks fail. Use **Settings → Local connection → Automatic Connector updates** to pause updates or check manually. Older installations need a one-time installation of the new Connector. Codex and Claude Code still need their own applications and authentication.
 
-插件连接时，Chrome 会自动启动 连接助手。安装后仍无法连接时，请重启 Chrome 并重新检测。更新时下载并打开新版安装器即可。Codex / Claude Code 仍需各自的应用及登录。
+插件连接时，Chrome 会自动启动 连接助手。安装后仍无法连接时，请重启 Chrome 并重新检测。新版连接助手默认自动更新：下载与扩展匹配的完整包，等待本地任务结束后安装，启动检查失败时恢复旧版。在**设置 → 本地连接 → 自动更新连接助手**中可暂停或手动检查。旧版安装需先安装一次新版，之后即可自动更新。Codex / Claude Code 仍需各自的应用及登录。
 
 ## Uninstall / 卸载
 

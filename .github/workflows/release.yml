@@ -134,7 +134,8 @@ jobs:
           $setup = Start-Process -FilePath release/artifacts/webagentmate-bridge-windows-x64.exe -ArgumentList '/S' -Wait -PassThru
           if ($setup.ExitCode -ne 0) { throw 'Silent install check failed' }
           $installed = (Get-Content (Join-Path $env:LOCALAPPDATA 'WebAgentMate/ai.webagentmate.bridge.json') -Raw | ConvertFrom-Json).path
-          node scripts/installer/verify-payload.cjs (Split-Path $installed -Parent)
+          $active = (Get-Content (Join-Path $env:LOCALAPPDATA 'WebAgentMate/active.json') -Raw | ConvertFrom-Json).current
+          node scripts/installer/verify-payload.cjs (Join-Path $env:LOCALAPPDATA "WebAgentMate/$active")
           if ($LASTEXITCODE -ne 0) { throw 'Installed runtime check failed' }
           $uninstall = Start-Process -FilePath (Join-Path $env:LOCALAPPDATA 'WebAgentMate/Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
           if ($uninstall.ExitCode -ne 0) { throw 'Uninstall check failed' }
@@ -150,6 +151,8 @@ jobs:
           sudo dpkg --install release/artifacts/webagentmate-bridge-linux-x64.deb
           node scripts/installer/verify-payload.cjs /opt/webagentmate-bridge
           sudo dpkg --remove webagentmate-bridge
+      - name: Verify automatic updates and rollback
+        run: node scripts/installer/verify-update.cjs build/installer-payload
       - name: Build and verify complete Bridge ZIP
         run: node scripts/installer/archive.cjs build/installer-payload
       - uses: actions/upload-artifact@v4
@@ -170,6 +173,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Sign update manifest
+        env:
+          WAM_UPDATE_SIGNING_KEY: ${{ secrets.WAM_UPDATE_SIGNING_KEY }}
+        run: node scripts/installer/sign-update.cjs artifacts
       - run: node scripts/installer/check-release.cjs artifacts
       - uses: softprops/action-gh-release@v2
         with:
@@ -181,3 +188,4 @@ jobs:
             artifacts/*.deb
             artifacts/*.rpm
             artifacts/*.sha256
+            artifacts/webagentmate-update.json

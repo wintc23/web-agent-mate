@@ -5,6 +5,7 @@ import type { AgentConfig } from "./agent/protocol";
 import type { AgentAdapter, AuthStatus, RemoteModel, WorkspaceDirectory } from "./messages";
 import type { SupportedLanguage } from "./locales";
 import { workspaceText } from "./workspace-i18n";
+import { BridgeUpdates } from "./bridge-updates";
 import { BridgeSetup } from "./bridge-setup";
 import { useBridgeDownload } from "./use-bridge-download";
 import { readProviderIssue } from "./agent/provider-error";
@@ -40,6 +41,7 @@ export function LocalConnectionPanel({ auth, adapters, onCheckBridge, s, languag
     <div className="ws-connection-heading ws-local-heading"><Avatar size={38} shape="square" className="ws-local-avatar" icon={<CodeOutlined />} /><div><h3>{s("node")}</h3></div><Tag bordered={false} color={auth?.runtimeV2 ? "success" : "default"}>{s(auth?.runtimeV2 ? "localConnected" : "localNotConnected")}</Tag></div>
     <p className="ws-connection-description">{s("localConnectionHint")}</p>
     <BridgeSetup s={s} language={language} onCheck={onCheckBridge} />
+    {auth?.bridgeInstalled && <BridgeUpdates language={language} supported={!!auth.autoUpdate} version={auth.bridgeVersion} />}
     <div className="ws-adapters">{adapters.filter(adapter => ["codex", "claude"].includes(adapter.id)).map(adapter => <div key={adapter.id}><Space><AgentAvatar engine={adapter.id as "codex" | "claude"} size={24} /><span>{adapter.name}</span></Space><Tag bordered={false} color={adapter.available ? "success" : "default"}>{adapter.available ? labels.ready : labels.unavailable}</Tag></div>)}</div>
     <p className="ws-settings-hint">{s("nativeHint")}</p>
   </section>;

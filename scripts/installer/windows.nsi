@@ -20,8 +20,8 @@ Var PayloadDir
 
 Section "Connector"
   SetShellVarContext current
-  CreateDirectory "$INSTDIR\versions"
-  GetTempFileName $PayloadDir "$INSTDIR\versions"
+  InitPluginsDir
+  GetTempFileName $PayloadDir "$PLUGINSDIR"
   Delete "$PayloadDir"
   CreateDirectory "$PayloadDir"
   SetOutPath "$PayloadDir"
@@ -31,25 +31,24 @@ Section "Connector"
     RMDir /r "$PayloadDir"
     Abort "Could not copy Connector. Close Chrome and try again."
   ${EndIf}
-  nsExec::ExecToStack '"$PayloadDir\runtime\node\node.exe" "$PayloadDir\setup.cjs" register "$PayloadDir"'
+  nsExec::ExecToStack '"$PayloadDir\runtime\node\node.exe" "$PayloadDir\setup.cjs" install "$PayloadDir"'
   Pop $0
   Pop $1
   ${If} $0 != "0"
     MessageBox MB_ICONSTOP "Could not register Connector: $1"
     Abort
   ${EndIf}
+  RMDir /r "$PayloadDir"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\WebAgentMateBridge" "DisplayName" "WebAgentMate Connector"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\WebAgentMateBridge" "DisplayVersion" "${VERSION}"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\WebAgentMateBridge" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\WebAgentMateBridge" "PayloadPath" "$PayloadDir"
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\WebAgentMateBridge" "NoModify" 1
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\WebAgentMateBridge" "NoRepair" 1
 SectionEnd
 
 Section "Uninstall"
-  ReadRegStr $PayloadDir HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\WebAgentMateBridge" "PayloadPath"
-  nsExec::ExecToStack '"$PayloadDir\runtime\node\node.exe" "$PayloadDir\setup.cjs" uninstall'
+  nsExec::ExecToStack '"$INSTDIR\launcher\webagentmate-launcher.exe" --uninstall'
   Pop $0
   Pop $1
   ${If} $0 != "0"
@@ -57,6 +56,9 @@ Section "Uninstall"
     Abort
   ${EndIf}
   RMDir /r "$INSTDIR\versions"
+  RMDir /r "$INSTDIR\launcher"
+  RMDir /r "$INSTDIR\updates"
+  Delete "$INSTDIR\active.json"
   Delete "$INSTDIR\Uninstall.exe"
   DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\WebAgentMateBridge"
   RMDir "$INSTDIR"

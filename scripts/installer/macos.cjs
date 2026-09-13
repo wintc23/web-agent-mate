@@ -23,6 +23,7 @@ const identity = process.env.WAM_MAC_SIGN_IDENTITY;
 const sign = file => exec("codesign", ["--force", "--sign", identity || "-", ...(identity ? ["--timestamp", "--options", "runtime"] : []), file], { stdio: "inherit" });
 exec("codesign", ["--force", "--sign", identity || "-", ...(identity ? ["--timestamp", "--options", "runtime"] : []), "--entitlements", path.join(__dirname, "node-entitlements.plist"), path.join(contents, "Resources/bridge/runtime/node/bin/node")], { stdio: "inherit" });
 sign(path.join(contents, "Resources/bridge/webagentmate-bridge"));
+sign(path.join(contents, "Resources/bridge/webagentmate-launcher"));
 sign(app);
 exec("codesign", ["--verify", "--deep", "--strict", app], { stdio: "inherit" });
 fs.writeFileSync(path.join(imageRoot, "Start here.txt"), "Double-click WebAgentMate Connector, then click Install. No terminal commands or separate Node.js installation are needed.\n\n双击 WebAgentMate Connector，点击安装。无需执行命令，也无需单独安装 Node.js。\n\nRequires macOS 13.5 or newer. / 需要 macOS 13.5 或更新版本。\n");

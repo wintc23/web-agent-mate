@@ -45,7 +45,7 @@ Browser tasks with the built-in agent need only the extension and an OrcaRouter 
 - Summarize, explain, translate, extract key points, or ask a custom question
 - OrcaRouter OAuth 2.0 + PKCE with a live model catalog grouped into free and paid models; Orca Free is the default and pricing is shown when available
 - Browser tools, page understanding, summarization, and translation are available to all three engines
-- Optional desktop Connector for local files/commands and native agents; direct installer downloads and connection checks in Settings
+- Optional desktop Connector for local files/commands and native agents; installer downloads, connection checks, and automatic updates in Settings
 - Selectable Codex, Claude Code, and built-in OrcaRouter engines
 - Built-in agent loop with validated tools, optional tool-call budgets (off by default), repeated-failure and unchanged-loop detection, cancellation, request deadlines, bounded connection retries, and conversation compaction
 - Local file listing, numbered reads, search, exact edits, approved commands and process management
@@ -173,7 +173,7 @@ cargo fmt --manifest-path bridge/Cargo.toml -- --check
 cargo test --manifest-path bridge/Cargo.toml --locked
 ```
 
-Tags matching `v*` build the extension and DMG/EXE/DEB/RPM installers plus developer ZIP archives. Publication checks macOS signing/notarization and Windows signing. `workflow_dispatch` builds development artifacts without publishing them.
+Tags matching `v*` build the extension and DMG/EXE/DEB/RPM installers plus developer ZIP archives. Publication checks macOS signing/notarization, Windows signing, and the signed Connector update manifest. `workflow_dispatch` builds development artifacts without publishing them.
 
 Pull requests and pushes to `main` run the automated tests, extension/runtime builds, and Rust checks in GitHub Actions. These checks use synthetic data and do not need provider credentials. `npm run dev` starts Vite for UI development; rebuild `dist/` and reload the unpacked extension to test Chrome APIs.
 
@@ -199,6 +199,8 @@ If Claude reports `CLAUDE_AUTH_REQUIRED`, run `claude auth login` in a terminal 
 | Page reading fails on `chrome://` or another restricted URL | Switch to a normal HTTP(S) page. Browser internal pages and file URLs are excluded. |
 | A task stops when the sidebar closes | The page that started the run owns its connection. Start subsequent long tasks in the dedicated conversation tab and keep that tab open. |
 | OrcaRouter reports a quota, key, or rate-limit error | Follow the error's connection, model, billing, or retry action. A model catalog response alone does not establish inference access. |
+
+Connector installations with the new updater check for the release matching the extension version on startup, after an extension update, and every six hours while Chrome is running. The Connector verifies the project signature and package checksum, downloads the complete runtime, and switches versions after local tasks finish. Failed startup checks restore the previous version. Control this in **Settings → Local connection → Automatic Connector updates**. Existing installations without updater support need a one-time installation of the latest complete Connector.
 
 To upgrade a source checkout, rebuild the extension and Bridge, rerun the installer, and reload the extension. For graphical installations, use the macOS installer’s Uninstall button, Windows Settings → Apps, or the Linux software manager. Source installations retain the `scripts/uninstall-native-host-*` scripts. Remove the extension separately in Chrome; see [PRIVACY.md](PRIVACY.md) for data deletion behavior.
 

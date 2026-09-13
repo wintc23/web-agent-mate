@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
+launcher="${XDG_DATA_HOME:-$HOME/.local/share}/webagentmate/launcher/webagentmate-launcher"
+if [[ -x "$launcher" ]]; then
+  exec "$launcher" --uninstall
+fi
+
 for manifest in \
   "${XDG_CONFIG_HOME:-$HOME/.config}/google-chrome/NativeMessagingHosts/ai.webagentmate.bridge.json" \
   "${XDG_CONFIG_HOME:-$HOME/.config}/chromium/NativeMessagingHosts/ai.webagentmate.bridge.json" \

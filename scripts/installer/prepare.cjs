@@ -34,6 +34,8 @@ async function prepare({ platform, arch, binary, out }) {
     await fs.rm(out, { recursive: true, force: true });
     await fs.mkdir(out, { recursive: true });
     await fs.copyFile(binary, path.join(out, `webagentmate-bridge${platform === "win32" ? ".exe" : ""}`));
+    await fs.copyFile(binary, path.join(out, `webagentmate-launcher${platform === "win32" ? ".exe" : ""}`));
+    await fs.copyFile(path.join(__dirname, "update-key.json"), path.join(out, "update-key.json"));
     await fs.cp(path.join(root, "bridge/runtime-dist"), path.join(out, "runtime"), { recursive: true });
     const node = path.join(out, "runtime/node", executable);
     await fs.mkdir(path.dirname(node), { recursive: true });
@@ -42,14 +44,14 @@ async function prepare({ platform, arch, binary, out }) {
     await fs.copyFile(path.join(root, "LICENSE"), path.join(out, "LICENSE"));
     await fs.copyFile(path.join(__dirname, "setup.cjs"), path.join(out, "setup.cjs"));
     if (platform !== "win32") {
-      await fs.chmod(node, 0o755); await fs.chmod(path.join(out, "webagentmate-bridge"), 0o755);
+      await fs.chmod(path.join(out, "webagentmate-launcher"), 0o755); await fs.chmod(node, 0o755); await fs.chmod(path.join(out, "webagentmate-bridge"), 0o755);
     }
     if (platform === process.platform && arch === process.arch) {
       if (execFileSync(node, ["--version"], { encoding: "utf8" }).trim() !== lock.version) throw new Error("Wrong bundled Node version");
     }
     const manifest = require(path.join(root, "public/manifest.json"));
     const extensionId = createHash("sha256").update(Buffer.from(manifest.key, "base64")).digest("hex").slice(0, 32).replace(/[0-9a-f]/g, digit => String.fromCharCode(97 + parseInt(digit, 16)));
-    await fs.writeFile(path.join(out, "bundle.json"), JSON.stringify({ version: manifest.version, extensionId, platform, arch, nodeVersion: lock.version }, null, 2) + "\n");
+    await fs.writeFile(path.join(out, "bundle.json"), JSON.stringify({ version: manifest.version, extensionId, platform, arch, nodeVersion: lock.version, autoUpdateProtocol: 1 }, null, 2) + "\n");
     console.log(`Prepared ${platform}/${arch} installer payload at ${out}`);
   } finally { await fs.rm(temporary, { recursive: true, force: true }); }
 }

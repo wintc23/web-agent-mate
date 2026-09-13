@@ -19,7 +19,7 @@ fs.writeFileSync(path.join(staging, "usr/share/applications/webagentmate-bridge.
 fs.writeFileSync(path.join(staging, "usr/share/metainfo/ai.webagentmate.bridge.metainfo.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<component type="desktop-application"><id>ai.webagentmate.bridge</id><metadata_license>CC0-1.0</metadata_license><project_license>MIT</project_license><name>WebAgentMate Connector</name><summary>Connect your browser to local AI tools</summary><description><p>Connect WebAgentMate to local files, commands, Codex and Claude Code. Includes the runtime and starts on demand.</p></description><launchable type="desktop-id">webagentmate-bridge.desktop</launchable><url type="homepage">https://github.com/wintc23/web-agent-mate</url><content_rating type="oars-1.1"/></component>\n`);
 for (const directory of ["etc/opt/chrome/native-messaging-hosts", "etc/chromium/native-messaging-hosts"]) {
   fs.mkdirSync(path.join(staging, directory), { recursive: true });
-  fs.writeFileSync(path.join(staging, directory, "ai.webagentmate.bridge.json"), manifest("/opt/webagentmate-bridge/webagentmate-bridge", meta.extensionId));
+  fs.writeFileSync(path.join(staging, directory, "ai.webagentmate.bridge.json"), manifest("/opt/webagentmate-bridge/webagentmate-launcher", meta.extensionId));
 }
 const migration = "/opt/webagentmate-bridge/runtime/node/bin/node /opt/webagentmate-bridge/setup.cjs";
 const deb = path.join(build, "deb");

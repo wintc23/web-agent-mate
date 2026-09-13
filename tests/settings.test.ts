@@ -36,6 +36,7 @@ test("background preserves browser sign-in and PKCE grants, and rejects manual k
   const get = async (keys: string | string[]) => Object.fromEntries((typeof keys === "string" ? [keys] : keys).map(key => [key, storage[key]]));
   const area = { get, set: async (items: any) => Object.assign(storage, items), remove: async (keys: string[]) => keys.forEach(key => delete storage[key]), setAccessLevel: async () => {} };
   globalThis.chrome = { runtime: { onInstalled: { addListener() {} }, onStartup: { addListener() {} }, onConnect: { addListener() {} }, onMessage: { addListener(fn: any) { listener = fn; } }, sendNativeMessage: async () => { throw new Error("No test host"); } },
+    alarms: { get: async () => ({ name: "bridge-update" }), create() {}, onAlarm: { addListener() {} } },
     action: { onClicked: { addListener() {} } }, storage: { local: area, session: area }, identity: { getRedirectURL: () => "https://test.chromiumapp.org/orcarouter", launchWebAuthFlow: async ({ url }: { url: string }) => {
       authorizationRequests++;
       authorization = new URL(url); assert.equal(authorization.protocol, "https:");
@@ -64,6 +65,8 @@ test("background preserves browser sign-in and PKCE grants, and rejects manual k
   try {
     await import("../src/background");
     assert.equal(authorizationRequests, 0);
+    const untrustedUpdate = await new Promise<any>(resolve => listener({ type: "bridge:update:check" }, { id: "content-script", url: "https://example.com" }, resolve));
+    assert.match(untrustedUpdate.error, /EXTENSION_PAGE_REQUIRED/);
     const request = (message: any) => new Promise<any>(resolve => listener(message, {}, resolve));
     const connected = await request({ type: "auth:connect" });
     assert.equal(connected.ok, true); assert.equal(connected.data.connected, true);

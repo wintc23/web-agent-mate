@@ -4,6 +4,7 @@ import type {
   AgentAdapterId,
   AgentResult,
   AuthStatus,
+  BridgeUpdateStatus,
   BackgroundRequest,
   BackgroundResponse,
   ChatMessage,
@@ -58,17 +59,35 @@ const AGENT_TASK_STORAGE_PREFIX = "agent_task:";
 chrome.runtime.onInstalled.addListener(() => {
   void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
   void restrictStorageAccess();
+  void scheduleBridgeUpdates();
+  void checkBridgeUpdate();
 });
 chrome.action.onClicked.addListener(tab => {
   void openFromToolbar(tab).catch(error => console.error("Could not open WebAgentMate", error));
 });
-chrome.runtime.onStartup.addListener(() => void restrictStorageAccess());
+chrome.runtime.onStartup.addListener(() => { void restrictStorageAccess(); void checkBridgeUpdate(); });
+chrome.alarms.onAlarm.addListener(alarm => { if (alarm.name === "bridge-update") void checkBridgeUpdate(); });
+void scheduleBridgeUpdates();
+
+async function scheduleBridgeUpdates() {
+  if (!await chrome.alarms.get("bridge-update")) chrome.alarms.create("bridge-update", { delayInMinutes: 1, periodInMinutes: 360 });
+}
+let updateCheck: Promise<void> | undefined;
+function checkBridgeUpdate(): Promise<void> {
+  return updateCheck ??= (async () => {
+    try {
+      const hello = await callNative<{ autoUpdate?: boolean }>("bridge.hello");
+      if (hello.autoUpdate) await callNative("bridge.update.check", { extensionVersion: chrome.runtime.getManifest().version });
+    } catch { /* Optional Connector may be absent or busy activating an update. */ }
+  })().finally(() => { updateCheck = undefined; });
+}
 void restrictStorageAccess();
 
 chrome.runtime.onMessage.addListener(
-  (request: BackgroundRequest, _sender, sendResponse: (response: BackgroundResponse) => void) => {
+  (request: BackgroundRequest, sender, sendResponse: (response: BackgroundResponse) => void) => {
     void (async () => {
       try {
+        if (request.type.startsWith("bridge:update:") && (sender.id !== chrome.runtime.id || !sender.url?.startsWith(chrome.runtime.getURL("")))) throw new Error("EXTENSION_PAGE_REQUIRED");
         sendResponse(await handleMessage(request));
       } catch (error) {
         sendResponse({ ok: false, error: readableError(error) });
@@ -184,6 +203,15 @@ chrome.runtime.onConnect.addListener((port) => {
 
 async function handleMessage(request: BackgroundRequest): Promise<BackgroundResponse> {
   switch (request.type) {
+    case "bridge:update:status":
+      return { ok: true, data: await callNative<BridgeUpdateStatus>("bridge.update.status") };
+    case "bridge:update:check":
+      return { ok: true, data: await callNative<BridgeUpdateStatus>("bridge.update.check", { extensionVersion: chrome.runtime.getManifest().version, force: true }) };
+    case "bridge:update:configure": {
+      const data = await callNative<BridgeUpdateStatus>("bridge.update.configure", { enabled: request.enabled });
+      if (request.enabled) void checkBridgeUpdate();
+      return { ok: true, data };
+    }
     case "auth:status":
       return { ok: true, data: await getStatus() };
     case "auth:connect":
@@ -564,11 +592,13 @@ async function getStatus(): Promise<AuthStatus> {
   const connected = typeof stored[STORAGE_KEY] === "string" && stored[STORAGE_KEY].length > 0;
   const verified = connected && typeof stored[VERIFIED_AT_KEY] === "number";
   try {
-    const hello = await callNative<{ version: string; runtimeV2?: boolean }>("bridge.hello");
+    const hello = await callNative<{ version: string; runtimeV2?: boolean; autoUpdate?: boolean }>("bridge.hello");
+    if (hello.autoUpdate) void checkBridgeUpdate();
     return {
       bridgeInstalled: true,
       bridgeVersion: hello.version,
       runtimeV2: hello.runtimeV2,
+      autoUpdate: hello.autoUpdate,
       connected,
       verified,
       callbackUrl

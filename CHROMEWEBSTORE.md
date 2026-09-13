@@ -130,6 +130,7 @@ Before submission, confirm the direct-user-benefit basis and prominent-disclosur
 - `sidePanel`: provides the primary assistant interface beside the page.
 - `identity`: performs the user-initiated OrcaRouter OAuth 2.0 + PKCE flow.
 - `storage`: stores language, theme, selected conversation and the user's OrcaRouter credential locally. Conversation messages, drafts, tool results and model/workspace settings persist in extension IndexedDB. There is no cross-device synchronization.
+- `alarms`: schedules a compatible Connector update check every six hours while Chrome runs; the native Connector stores update preferences/progress and performs signed package verification, installation when idle, and rollback. The switch is in Settings → Local connection.
 - `downloads`: starts a Bridge installer download after the user clicks Download Connector, clicks the folder control when Bridge is unavailable, or selects a platform. The extension checks the matching public release, downloads the exact project asset, and never opens or executes it automatically.
 - `nativeMessaging`: connects to the optional local Bridge for Codex, Claude Code, and the built-in agent with local file and command tools enabled. Built-in browser tasks and conversation management work without Bridge.
 - `tabs`: identifies the active tab and obtains its title/URL when the user requests page reading.
@@ -163,6 +164,8 @@ Refresh all store screenshots for 0.6.0. Include the Agent avatar, an in-progres
 Capture the vertical Settings navigation in wide and narrow layouts, and the separate Local section with Bridge installation and connection checks. The Models screenshots should show the regular-weight referral and commission disclosure above the full-width OrcaRouter sign-in button in both light and dark themes. Refresh composer screenshots to show the explicit permission label and the clickable Settings connection reminder.
 
 ## Version history
+
+- 0.6.0 (development, 2026-09-13) — Added automatic Connector updates with Ed25519 release signatures, full private-runtime packages, idle-only activation, rollback, and an update switch/status in all six languages. Added `alarms` for six-hour checks and updated PRIVACY.md. Older Connector installations require one installation of the new updater-capable package. Extension JavaScript remains bundled in the Chrome Web Store package; downloaded code runs only in the separately installed native host.
 
 - 0.6.0 (development, 2026-09-11) — All Connector distributions include a private runtime, including ZIPs. Added extracted-package verification and publication checks. Project commands retain the existing PATH and Node selection; damaged installations require reinstalling the complete package.
 

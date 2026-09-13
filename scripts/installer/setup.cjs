@@ -30,7 +30,8 @@ async function validatePayload(source, platform) {
   const meta = await metadata(source);
   if (!["darwin", "linux", "win32"].includes(meta.platform) || !["x64", "arm64"].includes(meta.arch) || !/^v\d+\.\d+\.\d+$/.test(meta.nodeVersion)) throw new Error("Invalid runtime metadata; download a complete Connector package.");
   if (platform && meta.platform !== platform) throw new Error("This installer is for a different operating system");
-  const files = [meta.platform === "win32" ? "webagentmate-bridge.exe" : "webagentmate-bridge", "runtime/agent.mjs", meta.platform === "win32" ? "runtime/node/node.exe" : "runtime/node/bin/node", "runtime/licenses/node.txt", "LICENSE"];
+  if (meta.autoUpdateProtocol !== 1) throw new Error("Unsupported Connector update protocol");
+  const files = [meta.platform === "win32" ? "webagentmate-bridge.exe" : "webagentmate-bridge", "runtime/agent.mjs", meta.platform === "win32" ? "runtime/node/node.exe" : "runtime/node/bin/node", "runtime/licenses/node.txt", "LICENSE", "setup.cjs", "runtime/updater.cjs", "update-key.json", meta.platform === "win32" ? "webagentmate-launcher.exe" : "webagentmate-launcher"];
   for (const file of files) {
     const info = await fs.stat(path.join(source, file)).catch(() => undefined);
     if (!info?.isFile() || !info.size) throw new Error(`Incomplete Connector package (${file}). Download the complete package again.`);
@@ -40,7 +41,12 @@ async function validatePayload(source, platform) {
 async function atomicWrite(file, text) {
   await fs.mkdir(path.dirname(file), { recursive: true });
   const temporary = `${file}.${randomUUID()}.tmp`;
-  try { await fs.writeFile(temporary, text, { mode: 0o644, flag: "wx" }); await fs.rename(temporary, file); }
+  try {
+    const handle = await fs.open(temporary, "wx", 0o600);
+    try { await handle.writeFile(text); await handle.sync(); } finally { await handle.close(); }
+    await fs.rename(temporary, file);
+    if (process.platform !== "win32") { const directory = await fs.open(path.dirname(file), "r"); try { await directory.sync(); } finally { await directory.close(); } }
+  }
   finally { await fs.rm(temporary, { force: true }); }
 }
 function manifest(binary, extensionId) {
@@ -53,7 +59,7 @@ async function register(source, options = {}) {
   const meta = await validatePayload(source, platform);
   const extensionId = options.extensionId || meta.extensionId;
   if (!/^[a-p]{32}$/.test(extensionId)) throw new Error("Invalid extension ID");
-  const binary = path.join(source, `webagentmate-bridge${platform === "win32" ? ".exe" : ""}`);
+  const binary = options.binary || path.join(source, `webagentmate-launcher${platform === "win32" ? ".exe" : ""}`);
   await fs.access(binary);
   for (const file of target.manifests) await atomicWrite(file, manifest(binary, extensionId));
   if (platform === "win32") for (const key of registryKeys) (options.exec || execFileSync)("reg.exe", ["add", key, "/ve", "/t", "REG_SZ", "/d", target.manifests[0], "/f"], { windowsHide: true, stdio: "pipe" });
@@ -61,35 +67,43 @@ async function register(source, options = {}) {
 async function install(source, options = {}) {
   const platform = options.platform || process.platform;
   const target = options.locations || locations(platform);
-  await validatePayload(source, platform);
-  await fs.mkdir(target.root, { recursive: true });
-  const staging = path.join(target.root, `.install-${randomUUID()}`);
-  const bin = path.join(target.root, "bin"), backup = path.join(target.root, `.previous-${randomUUID()}`);
-  let moved = false, activated = false;
-  const previous = await Promise.all(target.manifests.map(file => fs.readFile(file).catch(error => { if (error.code !== "ENOENT") throw error; return undefined; })));
+  const meta = await validatePayload(source, platform);
+  await fs.mkdir(path.join(target.root, "versions"), { recursive: true, mode: 0o700 });
+  const relative = `versions/${meta.version}-${randomUUID()}`;
+  const bin = path.join(target.root, relative);
+  const activeFile = path.join(target.root, "active.json");
+  const oldActive = await fs.readFile(activeFile).catch(error => { if (error.code !== "ENOENT") throw error; });
+  const previous = await Promise.all(target.manifests.map(file => fs.readFile(file).catch(error => { if (error.code !== "ENOENT") throw error; })));
   try {
-    await fs.cp(source, staging, { recursive: true });
-    try { await fs.rename(bin, backup); moved = true; } catch (error) { if (error.code !== "ENOENT") throw error; }
-    await fs.rename(staging, bin); activated = true;
-    await register(bin, { ...options, platform, locations: target });
+    await fs.cp(source, bin, { recursive: true, errorOnExist: true, force: false });
+    const launcherName = `webagentmate-launcher${platform === "win32" ? ".exe" : ""}`;
+    const launcher = path.join(target.root, "launcher", launcherName);
+    await fs.mkdir(path.dirname(launcher), { recursive: true });
+    // The protocol-1 bootstrap is immutable while Chrome may be running it.
+    try { await fs.copyFile(path.join(bin, launcherName), launcher, require("node:fs").constants.COPYFILE_EXCL); }
+    catch (error) { if (error.code !== "EEXIST") throw error; }
+    if (platform !== "win32") await fs.chmod(launcher, 0o755);
+    await atomicWrite(activeFile, JSON.stringify({ current: relative, previous: oldActive ? JSON.parse(oldActive).current : null, probation: false }));
+    await register(bin, { ...options, platform, locations: target, binary: launcher });
   } catch (error) {
-    if (activated) await fs.rm(bin, { recursive: true, force: true });
-    if (moved) await fs.rename(backup, bin);
+    if (oldActive) await atomicWrite(activeFile, oldActive); else await fs.rm(activeFile, { force: true });
     for (let i = 0; i < previous.length; i++) {
       if (previous[i] === undefined) await fs.rm(target.manifests[i], { force: true });
       else await atomicWrite(target.manifests[i], previous[i]);
     }
+    await fs.rm(bin, { recursive: true, force: true });
     throw error;
-  } finally { await fs.rm(staging, { recursive: true, force: true }); }
-  await fs.rm(backup, { recursive: true, force: true });
+  }
+  return bin;
 }
+
 async function unregister(options = {}) {
   const platform = options.platform || process.platform;
   const target = options.locations || locations(platform);
   for (const file of target.manifests) {
     try {
       const value = JSON.parse(await fs.readFile(file, "utf8"));
-      if (value.name === HOST && (value.path.startsWith(target.root + path.sep) || value.path === "/opt/webagentmate-bridge/webagentmate-bridge")) await fs.rm(file);
+      if (value.name === HOST && (value.path.startsWith(target.root + path.sep) || value.path === "/opt/webagentmate-bridge/webagentmate-launcher")) await fs.rm(file);
     } catch (error) { if (error.code !== "ENOENT") throw error; }
   }
   if (platform === "win32") for (const key of registryKeys) {
@@ -117,24 +131,38 @@ async function migrateUsers(source, remove = false) {
 async function migrateUser(source, remove = false) {
   const target = locations();
   const meta = await metadata(source);
-  const binary = path.join(source, "webagentmate-bridge");
+  const binary = path.join(source, "webagentmate-launcher");
   for (const file of target.manifests) {
     let value;
     try { value = JSON.parse(await fs.readFile(file, "utf8")); } catch (error) { if (error.code === "ENOENT" || error instanceof SyntaxError) continue; throw error; }
     if (value.name !== HOST) continue;
-    if (remove) { if (value.path === binary) await fs.rm(file); }
-    else if (value.path?.startsWith(target.root + path.sep) || value.path === binary) {
+    const managed = value.path?.startsWith(path.join(target.root, "launcher") + path.sep);
+    if (remove) {
+      if (managed) await atomicWrite(path.join(target.root, "updates/settings.json"), JSON.stringify({ enabled: false }));
+      if (value.path === binary || managed) await fs.rm(file);
+    }
+    else if (!managed && (value.path?.startsWith(target.root + path.sep) || value.path === binary || value.path === path.join(source, "webagentmate-bridge"))) {
       if (value.path !== binary) await atomicWrite(`${file}.before-package`, JSON.stringify(value));
       await atomicWrite(file, manifest(binary, meta.extensionId));
     }
   }
 }
-module.exports = { locations, manifest, install, register, unregister, validatePayload };
+module.exports = { locations, manifest, install, register, unregister, validatePayload, atomicWrite };
 if (require.main === module) (async () => {
   const action = process.argv[2], source = path.resolve(process.argv[3] || __dirname);
+  if (action === "bootstrap") {
+    const target = locations();
+    if (!await fs.access(path.join(target.root, "active.json")).then(() => true, () => false)) await install(source);
+    console.log(target.root); return;
+  }
   if (action === "install") await install(source, { extensionId: process.argv[4] });
   else if (action === "register") await register(source);
-  else if (action === "uninstall") { await unregister(); if (process.platform === "darwin") await fs.rm(path.join(locations().root, "bin"), { recursive: true, force: true }); }
+  else if (action === "uninstall") {
+    await atomicWrite(path.join(locations().root, "updates/settings.json"), JSON.stringify({ enabled: false }));
+    await unregister();
+    // Windows removes files after this private Node and launcher have exited.
+    if (process.platform !== "win32") for (const entry of ["versions", "launcher", "bin", "active.json"]) await fs.rm(path.join(locations().root, entry), { recursive: true, force: true });
+  }
   else if (action === "migrate-users" || action === "remove-users") await migrateUsers(source, action === "remove-users");
   else if (action === "migrate-user" || action === "migrate-remove") await migrateUser(source, action === "migrate-remove");
   else throw new Error("Unknown installer action");

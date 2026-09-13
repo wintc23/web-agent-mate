@@ -43,7 +43,17 @@ The pinned runtime and SHA-256 checksums are in [`node-runtime.json`](../scripts
 
 The current Node 24 runtime requires macOS 13.5+. Windows packages target x64. Linux builds use Ubuntu 22.04 and require glibc 2.35+, with DEB packages for Ubuntu 22.04+/Debian 12+ and RPM packages for compatible Fedora systems. Windows ARM, Linux ARM and older Linux distributions do not currently have installers. Linux package selection defaults to DEB because Chrome's platform API does not report the distribution; users can select RPM from the download menu.
 
-macOS and Windows install for the current account. Linux installs under `/opt/webagentmate-bridge` and registers system Native Messaging manifests. During migration, Linux changes only existing per-user manifests pointing at an older WebAgentMate installation; these changes run with that user's privileges and keep a backup. Uninstallation removes Bridge registration and program files while retaining conversations and user-created files.
+macOS and Windows install for the current account. Linux installs a seed under `/opt/webagentmate-bridge` and registers a system launcher. The launcher copies the complete payload into the current user’s data directory on first use, so subsequent updates need no root privileges. All platforms use `launcher/webagentmate-launcher`, `active.json`, and immutable `versions/<version>-<uuid>` payload directories. During migration, Linux changes only existing per-user manifests pointing at an older WebAgentMate installation; these changes run with that user's privileges and keep a backup. macOS/Windows uninstallation removes registration and program files while retaining conversations and user-created files. Removing a Linux system package disables automatic updates and removes the per-user registration; its cached per-user payload can be removed with the ZIP uninstall script.
+
+## Automatic update protocol
+
+The extension checks on install/update, startup, successful connection and a six-hour `chrome.alarms` schedule. The native worker throttles network checks persistently. The extension provides only its manifest version; clients cannot supply update URLs, filesystem paths or signing keys. The release URL is fixed to this repository and exact version. Equal/newer installed versions do not download; missing releases leave the installation intact. A failed version is not automatically retried until a different release or an explicit check.
+
+`webagentmate-update.json` contains a base64 JSON payload and Ed25519 signature. The signed payload binds the schema/protocol, extension version, Bridge version, and each platform/architecture’s ZIP URL, byte size and SHA-256. `update-key.json` pins the public key. Verification precedes extraction and execution. Extraction rejects path traversal, Windows aliases, collisions and excessive size; entries are written as regular files. Private Node is part of every ZIP.
+
+The Rust launcher holds a cross-process shared OS lock for each native connection; a separate worker takes the exclusive lock to activate. Thus active tasks in any window finish before switching. Both pre-activation and post-activation health checks launch the candidate’s actual private runtime. `active.json` changes atomically, retains the previous payload, and records an unacknowledged activation. The launcher restores the previous payload after an interrupted activation. Current and previous versions are retained; older updater-managed versions are removed during successful activation. Update progress/preferences persist under `updates/`, independent of Chrome’s service-worker lifetime. The bootstrap itself keeps protocol 1 and is not overwritten by automatic updates; a future incompatible bootstrap change needs a new installer.
+
+The update signing private key belongs in the repository Actions secret `WAM_UPDATE_SIGNING_KEY` (Ed25519 PKCS#8 PEM); never include it in source or packages. `sign-update.cjs` refuses a key that differs from the pinned public key. Back up the signing key securely. Forks must generate their own pair, change the repository release URL, rebuild all installers, and provision their secret. Changing only the public key breaks updates for already-installed clients; key rotation requires a release trusted by the existing key first.
 
 ## Signing and publication
 
@@ -60,7 +70,7 @@ The macOS job imports the certificate into a temporary runner keychain, signs th
 
 For Windows, configure `WAM_WINDOWS_CERTIFICATE_BASE64` and `WAM_WINDOWS_CERTIFICATE_PASSWORD` with a supported code-signing PFX. The workflow locates `signtool`, signs and timestamps the EXE, and verifies the result. A hardware- or cloud-backed certificate requires adapting the signing step to that provider. Local builds accept `WAM_WINDOWS_CERTIFICATE` as the PFX path and optionally `WAM_SIGNTOOL`/`WAM_MAKENSIS` as tool paths.
 
-`check-release.cjs` requires all five graphical installers, the extension ZIP, macOS signing/notarization records, a Windows signing record, and four complete Bridge ZIPs with matching SHA-256 runtime-verification records. Unsigned development builds remain available as workflow artifacts. A signing certificate does not guarantee that Windows SmartScreen will immediately recognize a new publisher.
+`check-release.cjs` requires all five graphical installers, the extension ZIP, macOS signing/notarization records, a Windows signing record, four complete Bridge ZIPs with matching SHA-256 runtime-verification records, and a valid signed update manifest bound to those exact archives. Unsigned development builds remain available as workflow artifacts. A signing certificate does not guarantee that Windows SmartScreen will immediately recognize a new publisher.
 
 ## Verify
 
@@ -70,6 +80,7 @@ npm run build
 cargo test --manifest-path bridge/Cargo.toml
 node scripts/installer/verify-payload.cjs build/installer-payload
 node scripts/installer/archive.cjs build/installer-payload
+node scripts/installer/verify-update.cjs build/installer-payload
 ```
 
 `verify-payload.cjs` uses a temporary home and a PATH without user-installed Node, then exercises the actual Native Messaging hello exchange. On macOS, also test the payload inside the generated app:
@@ -83,3 +94,5 @@ Payload and extracted ZIP verification exercise the real Bridge with an empty PA
 Installation verification installs into an isolated account directory, starts the installed host and agent bundle, upgrades, unregisters, and checks that conversation data remains. Use `macos-x64` for Intel. CI runs these checks on both Mac architectures; Windows CI silently installs the EXE, checks the installed runtime, and uninstalls it. Linux CI builds both formats, checks their metadata, installs and removes the DEB, and checks the installed runtime. RPM installation and interactive installer prompts still require validation on their target desktop systems.
 
 Before publishing, open the downloaded installers on clean target systems, complete their graphical flows, and verify **Check again** in Chrome. See [acceptance notes](ACCEPTANCE-v0.6.md) for which checks have actually run; the presence of CI configuration is not a completed platform test.
+
+`verify-update.cjs` uses the packaged launcher, native host, private Node and updater in an isolated installation. It validates signed download/activation, a live native port blocking activation, the detached worker surviving port closure, a bad candidate restoring the old version, and recovery after an interrupted activation. Network responses and signing keys are isolated test fixtures; production RPCs have no test overrides.

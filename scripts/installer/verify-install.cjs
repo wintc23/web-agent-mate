@@ -12,12 +12,11 @@ const { install, unregister, locations } = require("./setup.cjs");
   try {
     await fs.mkdir(target.root, { recursive: true });
     await fs.writeFile(path.join(target.root, "conversation-fixture.txt"), "preserve");
-    await install(source, { locations: target });
-    const bin = path.join(target.root, "bin");
+    const bin = await install(source, { locations: target });
     execFileSync(process.execPath, [path.join(__dirname, "verify-payload.cjs"), bin], { stdio: "inherit" });
     // Load the actual runtime using only the installed private Node. An empty
     // stdin exits without provider calls, but verifies imports and dependencies.
-    execFileSync(path.join(bin, "runtime/node/bin/node"), [path.join(bin, "runtime/agent.mjs")], { input: "", timeout: 15_000, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, PATH: "/usr/bin:/bin" } });
+    execFileSync(path.join(bin, process.platform === "win32" ? "runtime/node/node.exe" : "runtime/node/bin/node"), [path.join(bin, "runtime/agent.mjs")], { input: "", timeout: 15_000, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, PATH: "/usr/bin:/bin" } });
     await install(source, { locations: target });
     await unregister({ locations: target });
     for (const file of target.manifests) await assert.rejects(fs.access(file));

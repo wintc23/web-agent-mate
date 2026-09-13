@@ -14,6 +14,9 @@ export interface RemoteModel {
 }
 
 export type BackgroundRequest =
+  | { type: "bridge:update:status" }
+  | { type: "bridge:update:check" }
+  | { type: "bridge:update:configure"; enabled: boolean }
   | { type: "auth:status" }
   | { type: "auth:connect" }
   | { type: "auth:disconnect" }
@@ -84,12 +87,23 @@ export interface AuthStatus {
   bridgeInstalled: boolean;
   runtimeV2?: boolean;
   bridgeVersion?: string;
+  autoUpdate?: boolean;
   connected: boolean;
   verified: boolean;
   callbackUrl: string;
 }
 
+export interface BridgeUpdateStatus {
+  enabled: boolean;
+  version: string;
+  phase: "idle" | "checking" | "downloading" | "waiting_idle" | "applying" | "current" | "updated" | "rolled_back" | "unavailable" | "error";
+  targetVersion?: string;
+  progress?: number;
+  lastChecked?: number;
+}
+
 export type BackgroundResponse =
+  | { ok: true; data: BridgeUpdateStatus }
   | { ok: true; data: AuthStatus }
   | { ok: true; data: { modelCount: number } }
   | { ok: true; data: PageContext }

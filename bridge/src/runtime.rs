@@ -73,6 +73,22 @@ pub fn available() -> bool {
     bundle_path().is_some() && node_path().is_some()
 }
 
+pub fn health_check() -> BridgeResult<()> {
+    let bundle = bundle_path().ok_or_else(|| BridgeError::new("RUNTIME_BUNDLE_MISSING"))?;
+    let node = node_path().ok_or_else(|| BridgeError::new("RUNTIME_BUNDLE_MISSING"))?;
+    run_process(
+        &node,
+        &[bundle
+            .to_str()
+            .ok_or_else(|| BridgeError::new("PATH_INVALID"))?],
+        Some(""),
+        Duration::from_secs(20),
+        8192,
+        None,
+    )?;
+    Ok(())
+}
+
 // One Native Messaging port owns one runtime. Its closure closes runtime stdin,
 // which cancels pending approvals/model requests and terminates owned children.
 pub fn serve(request: &Request, reader: &mut impl Read) -> BridgeResult<()> {
