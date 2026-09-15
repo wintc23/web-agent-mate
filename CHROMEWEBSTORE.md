@@ -14,7 +14,7 @@ GitHub v0.6.0 has a [release draft](https://github.com/wintc23/web-agent-mate/re
 
 Submitted package: `release/artifacts/webagentmate-chrome-0.6.0.zip` (517,996 bytes, 16 runtime files). SHA-256: `45e6b47c6712c763d1c325e2bb6100ad7229e75a07634176b08a8c38f86ea6e6`. The archive has `manifest.json` at its root and excludes source, screenshots, documentation, source maps, credentials and desktop installers. The dashboard's Package page confirmed version 0.6.0 and the current permissions, including `alarms`.
 
-The portfolio page at https://wintc.top/products/webagentmate was updated on 2026-09-15 with the current capabilities, Connector installation and automatic-update behavior. It shows “Chrome 商店审核中” following a fresh dashboard check and links to the Chinese installation guide. The public page and its metadata were verified after saving.
+The portfolio page at https://wintc.top/products/webagentmate was updated on 2026-09-15 with the current capabilities, Connector installation and automatic-update behavior. It links to the Chinese installation guide and presents the product as open source. Store review and release-preparation progress are omitted from the product introduction at the user's request. The public page and its metadata were verified after saving.
 
 | Field | Value |
 | --- | --- |
