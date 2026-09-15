@@ -294,3 +294,9 @@ ZIP 完整性和必要文件检查通过。Bridge 包包含可执行文件、安
 - 用户已明确授权提交。确认对话框保留“审核通过后自动发布”，继续经过宽泛主机权限的深入审核提示后，后台返回“已提交此项内容”及“待审核”。独立状态页再次确认“该草稿尚待审核”。尚未获批或公开上架。
 - 本次会话无 WebAgentMate 浏览器工具，且当前工具不支持文件上传。在检查项目连接后，经用户开启 Chrome 的 Apple 事件 JavaScript 设置，使用 Chrome 本机自动化完成操作；未使用 Playwriter。部分旧标签页的 AppleEvent 调用超时，改用新后台标签页并核对服务器保存结果后继续；未把超时动作当作成功。
 - 本机回执保存在 `build/store-submit/submission-result.json`、`build/store-submit/final-status.json` 和 `build/store-submit/status.json`。
+
+## 2026-09-15：网站产品介绍更新
+
+- 重新读取 Chrome 商店后台，WebAgentMate v0.6.0 仍为“待审核”；GitHub v0.6.0 仍为发布草稿。
+- 更新[网站作品页](https://wintc.top/products/webagentmate)的简介、功能卡片、开始使用步骤及连接助手说明。首屏显示“Chrome 商店审核中”，主按钮指向中文安装文档；说明安装包自带独立 Node、与本机环境隔离，以及匹配版本更新、空闲安装和失败恢复的行为。
+- 网站后台返回“作品已保存”。从公开页面重新获取并核对了全部修改文案、安装链接、SEO 简介与原有三张截图；中文安装文档返回 HTTP 200。文案副本同步到 `docs/portfolio-webagentmate.json`，本机核对记录保存在 `build/portfolio-update/`。
