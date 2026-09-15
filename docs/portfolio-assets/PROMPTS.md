@@ -1,12 +1,31 @@
-# WebAgentMate 产品概念图
+# WebAgentMate 产品封面
 
-生成日期：2026-09-15。使用内置 `image_gen` 生成，未使用 CLI/API fallback。用途为网站产品封面。原始生成图片保留于本目录；图片为概念插画。
+当前封面于 2026-09-15 经用户选定后发布，使用内置 `image_gen` 生成。图片用于作品列表、详情页首屏与分享预览，产品截图图集保持原内容。
 
-视觉方向：浅色陶瓷质感与品牌紫蓝色，表达网页上下文经过 AI 处理形成工作成果。网站正文与图片说明负责解释功能，图片本身不堆叠文字。
+## 当前版本：青绿色平面风
 
-最终文件：`concept-web-to-work-v1.png`，1586 × 992，1,749,900 字节。SHA-256：`c4b034f37db33010d1a350270746be75484aba79de5423e2012a4311d830b8ef`。
+文件：[cover-editorial-v2.png](cover-editorial-v2.png)，1586 × 992，1,281,008 字节。SHA-256：`7e53a930c7d8a12fa49e19480871dbb7b9b1d2db0c60a8eac2926fc39ebe30b8`。
 
-网站封面地址：https://file.wintc.top/98a415ac72de48c59e6a00c261536580 。用于作品列表、详情页首屏与分享预览；产品截图图集保持原内容。
+网站封面地址：https://file.wintc.top/d1b258e9291747d797dbca5763a23ff5
+
+视觉方向：沿用产品标识中的青绿色，使用醒目的产品名称、原有标语和平面概念图，表达网页上下文经 AI 处理形成工作成果。
+
+最终提示词：
+
+```text
+Use case: ads-marketing.
+Asset type: a newly designed landscape cover for the WebAgentMate product portfolio website, 16:10, approximately 1600x1000. This is a cover preview, not an app screenshot.
+Primary request: redesign the rejected soft purple 3D sculpture cover into a distinctive, sophisticated FLAT EDITORIAL graphic. Strong typography, crisp intentional composition, immediately understandable concept. An excellent independent design studio's finished technology-product poster.
+Reference image: the provided small robot is the EXISTING official WebAgentMate brand mark, for brand identity and colors only. Use the exact mark only as a small signature near the product name; do not expand it into a giant mascot, do not redesign its face, and do not copy its black transparent-preview background.
+Background: warm clean near-white #F6F7F5. Restrained charcoal #12252B typography and fine technical lines, deep teal #004955 and a single bright mint #19E6A1 accent taken from the brand mark.
+Composition: top left a small brand signature. The exact product name "WebAgentMate" in very large, beautifully spaced confident modern grotesk typography across the upper third. Below it, the existing Chinese tagline "让每个网页都能连接你的 AI 智能体" in a clean contemporary Chinese sans serif, visibly readable, not tiny. Do not invent another slogan.
+The lower half contains ONE clear, bold, flat conceptual illustration: a simplified white article page with a dark outline and an emphasized mint paragraph block, a large crisp cursor indicating action, and a smooth teal route that passes through one compact assistant node then arrives at a neat completed document marked by a large mint check. The assistant node may contain a simple pair of circular eyes echoing the brand identity, but not a 3D robot. The route and objects form a confident horizontal composition with a modest oversize graphic element, generous asymmetric whitespace and strong balance. This represents page context turning into useful work.
+Print-like precision, flat color areas, restrained line art, tiny amount of subtle paper texture only. No gradients, no soft shadows, no ceramic or glass materials, no 3D, no platforms, no round podiums, no floating abstract spheres, no stock-art decorative plants or sparkles, no fake app chrome, no controls or dashboard, no product screenshot, no watermark. No extra text beyond the exact product name and Chinese tagline. Design must remain crisp and recognizable when reduced to a 400px-wide portfolio card.
+```
+
+## 历史版本
+
+以下为之前的立体概念封面，保留原图及生成提示词作为设计记录。
 
 ## concept-web-to-work-v1.png
 
