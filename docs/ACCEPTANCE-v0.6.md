@@ -334,4 +334,6 @@ ZIP 完整性和必要文件检查通过。Bridge 包包含可执行文件、安
 - 本地生产构建、类型及六语言检查通过，112 项自动化测试通过；新增命令测试覆盖版本/扩展 ID 输入约束、两种架构、Rosetta、下载失败及校验失败时停止安装。
 - 使用独立 Chrome for Testing 加载实际 `dist/`，模拟 Chrome 的系统和下载接口，六种语言分别验证默认系统、三系统切换、安装包选择、复制及失败回退、键盘操作、Esc 关闭与焦点恢复。320/400/600 px 布局及深浅主题已检查；这不是对用户已安装扩展的操作。截图：`.test-output/install-guide-<language>-<width>.png`，测试脚本 `.test-output/install-guide-ui.cjs`。
 - 实际从公开 v0.6.0 下载 Mac Intel 完整 ZIP 和校验和，核对 SHA-256 后解压；内置 Node 无下载隔离属性并可直接启动。对该真实 payload 执行 `verify-install.cjs`，在隔离目录完成安装、运行时加载、升级和卸载登记；没有安装到用户当前账户。此验证不等同于在所有 macOS 安全策略和设备上验证首次安装。
-- macOS 两种架构的 `Verify native updater` 分支验证待完成。本地 `dist/` 已更新，GitHub 已发布的 v0.6.0 文件和商店提交包保持原版本；新安装界面尚未发布为新的扩展包。
+- `Verify native updater` 对工作分支提交 `35b0fd6` 的验证均通过：[Mac Intel 35221313141](https://github.com/wintc23/web-agent-mate/actions/runs/35221313141)、[Apple Silicon 35221317440](https://github.com/wintc23/web-agent-mate/actions/runs/35221317440)，覆盖完整原生 payload、ZIP 与实际更新/回滚。未重跑无改动的 Windows/Linux 原生包验收。
+- 补充浏览器检查通过：Linux ARM 上仍显示 Linux 安装说明；系统检测延迟返回时，不覆盖用户已经手动选择的标签。为当前已发布版本生成的可复制命令保存在 `build/install-guide-verification/install-macos.txt`。
+- 本地 `dist/` 已更新，GitHub 已发布的 v0.6.0 文件和商店提交包保持原版本；新安装界面尚未发布为新的扩展包。

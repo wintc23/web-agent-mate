@@ -117,6 +117,8 @@ cargo build --manifest-path bridge/Cargo.toml --release
 
 连接助手的所有分发包均内置独立的 Node.js 和依赖许可证，不替换已有 Node，也不修改全局 PATH。使用图形安装器时，用户不需要执行命令或单独安装 Node.js。安装完成后返回插件点击**重新检测**，Chrome 会按需启动连接助手。macOS 要求 13.5+；Linux 软件包面向 Ubuntu 22.04+、Debian 12+ 及兼容 glibc 2.35+ 的发行版。
 
+当前源码构建的安装说明默认展示当前系统，可通过标签切换其他平台。macOS 还提供可复制的安装命令，使用完整发布 ZIP 完成安装，详见[命令安装说明](docs/BRIDGE-INSTALL.md#macos)。这项界面改进将随下一次扩展更新发布。
+
 上表中的安装包已于 2026-09-17 公开发布，可直接[下载 v0.6.0](https://github.com/wintc23/web-agent-mate/releases/tag/v0.6.0)。macOS 安装器未进行 Developer ID 签名和 Apple 公证，Windows 安装器未进行发布者签名，首次打开时系统可能要求确认允许安装。自动更新保留更新清单签名和 SHA-256 校验。开发构建与发布配置见[安装器开发说明](docs/INSTALLER-DEVELOPMENT.md)，用户操作见[安装说明](docs/BRIDGE-INSTALL.md)。
 
 ## 会话与长任务
