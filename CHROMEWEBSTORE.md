@@ -167,11 +167,15 @@ These repository instructions were updated on 2026-09-17. The reviewer text save
 
 ## Screenshot checklist
 
+The current source build adds OS-specific installation tabs and a default macOS command-installation tab with a copy button; the graphical installer remains available. Capture the updated installation dialog before the next Store submission. These UI changes are not included in the already published v0.6.0 extension ZIP or the previously submitted Store package.
+
 Refresh all store screenshots for 0.6.0. Include the Agent avatar, an in-progress request with the stop control, searchable provider/model cascades with Free/Paid labels, local engine and working-directory selection, the conversation drawer, inline action approval, and the dedicated Settings/About page in both light and dark themes.
 
 Capture the vertical Settings navigation in wide and narrow layouts, and the separate Local section with Bridge installation and connection checks. The Models screenshots should show the regular-weight referral and commission disclosure above the full-width OrcaRouter sign-in button in both light and dark themes. Refresh composer screenshots to show the explicit permission label and the clickable Settings connection reminder.
 
 ## Version history
+
+- Next extension update (development, 2026-09-17) — Installation instructions default to the detected OS and offer macOS/Windows/Linux tabs in all six languages. macOS offers command and graphical installation, defaulting to a copyable command that downloads the matching full ZIP, checks SHA-256, selects Intel/Apple Silicon (including Rosetta), and runs the bundled installer for the actual extension ID. No new extension permissions; security settings and the user's Node environment are unchanged.
 
 - 0.6.0 (GitHub release, 2026-09-17) — Published the verified extension and complete Connector packages as Latest, with maintainer authorization to omit operating-system signing. Verified anonymous downloads for all ten packages, all five installer choices in the extension's resolver, and the public signed update manifest. Updated repository download instructions; Store dashboard status and text were not changed.
 

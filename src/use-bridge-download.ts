@@ -5,6 +5,7 @@ type DownloadState = "downloadStarted" | "downloadUnavailable" | "downloadFailed
 
 export function useBridgeDownload() {
   const [target, setTarget] = useState<BridgePackage>();
+  const [system, setSystem] = useState<chrome.runtime.PlatformInfo>();
   const [downloading, setDownloading] = useState(false);
   const [downloadState, setDownloadState] = useState<DownloadState>();
   const controller = useRef<AbortController>();
@@ -15,11 +16,18 @@ export function useBridgeDownload() {
     void (async () => {
       try {
         const info = await chrome.runtime.getPlatformInfo();
-        if (live) setTarget(defaultBridgePackage(info));
+        if (live) {
+          setSystem(info);
+          setTarget(selected => selected ?? defaultBridgePackage(info));
+        }
       } catch { /* The click handler can retry platform detection. */ }
     })();
     return () => { live = false; mounted.current = false; controller.current?.abort(); };
   }, []);
+  const selectTarget = (selected: BridgePackage) => {
+    setTarget(selected);
+    setDownloadState(undefined);
+  };
   const startDownload = async (selected = target): Promise<DownloadState | undefined> => {
     if (controller.current) return;
     const request = new AbortController(); controller.current = request;
@@ -43,5 +51,5 @@ export function useBridgeDownload() {
     setDownloadState(result);
     return result;
   };
-  return { target, downloading, downloadState, startDownload };
+  return { target, system, selectTarget, downloading, downloadState, startDownload };
 }

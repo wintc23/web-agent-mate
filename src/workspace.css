@@ -98,6 +98,12 @@
 .ws-install-guide h2 { font-size: 15px; margin: 20px 0 8px; }
 .ws-install-guide ol { padding-inline-start: 22px; }
 .ws-install-guide li + li { margin-top: 6px; }
+.ws-install-guide .ant-tabs-tab + .ant-tabs-tab { margin-inline-start: 20px; }
+.ws-install-guide .ant-tabs-tab { white-space: normal; }
+.ws-install-copy.ant-btn { max-width: 100%; height: auto; min-height: 32px; white-space: normal; }
+.ws-install-command { margin-block: 12px; }
+.ws-install-command summary { cursor: pointer; }
+.ws-install-command pre { max-height: 220px; overflow: auto; padding: 12px; border-radius: 8px; background: var(--surface-muted); font-size: 11px; }
 .ws-settings-open { container: ws-settings / inline-size; background: var(--surface); }
 .ws-settings-header { flex: 0 0 42px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 8px 4px 12px; background: var(--brand-soft); }
 .ws-settings-header > div:first-child { display: flex; align-items: center; gap: 9px; min-width: 0; }

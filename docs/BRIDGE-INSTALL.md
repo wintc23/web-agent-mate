@@ -16,6 +16,14 @@ Open **Settings → Local connection → Download Connector**. The button downlo
 
 ## macOS
 
+### Command installation in the current source build / 当前源码版的命令安装
+
+Open **Settings → Local connection → Installation guide**. The guide selects your system automatically; tabs switch between macOS, Windows and Linux. On macOS, **Command installation** is the default: copy the command, open Terminal, paste it and press Return. The command selects Intel or Apple Silicon (including a Terminal running under Rosetta), downloads the complete ZIP for the extension version, checks its SHA-256, and runs its bundled installer. Return to the extension and click **Check again**. This path does not change system security settings or the user's Node environment. The new guide is available in source builds; the previously published v0.6.0 extension ZIP retains the earlier guide.
+
+打开**设置 → 本地连接 → 安装说明**，默认展示当前系统，可通过标签切换 macOS、Windows 和 Linux。macOS 默认使用**命令安装**：复制命令，打开终端，粘贴并按回车。命令会识别 Intel 或 Apple Silicon（含 Rosetta），下载与扩展版本匹配的完整 ZIP、核对 SHA-256，再运行包内安装器。完成后返回插件点击**重新检测**。该方式保留系统安全设置及用户已有的 Node 环境。新版说明已包含在源码构建中，之前发布的 v0.6.0 扩展 ZIP 仍使用旧版说明。
+
+### Graphical installation / 图形安装
+
 1. Open the `.dmg`, then double-click **WebAgentMate Connector**.
 2. Click **Install / Update**. Installation applies to your Mac account.
 3. Return to the extension and click **Check again**. You can eject the disk image afterward.

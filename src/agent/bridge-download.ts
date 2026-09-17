@@ -1,11 +1,12 @@
 export const BRIDGE_PACKAGES = {
-  "macos-arm64": { label: "macOS · Apple Silicon", file: "webagentmate-bridge-macos-arm64.dmg" },
-  "macos-x64": { label: "macOS · Intel", file: "webagentmate-bridge-macos-x64.dmg" },
-  "windows-x64": { label: "Windows · x64", file: "webagentmate-bridge-windows-x64.exe" },
-  "linux-deb": { label: "Linux · Ubuntu / Debian (.deb)", file: "webagentmate-bridge-linux-x64.deb" },
-  "linux-rpm": { label: "Linux · Fedora (.rpm)", file: "webagentmate-bridge-linux-x64.rpm" }
+  "macos-arm64": { platform: "macos", label: "macOS · Apple Silicon", file: "webagentmate-bridge-macos-arm64.dmg" },
+  "macos-x64": { platform: "macos", label: "macOS · Intel", file: "webagentmate-bridge-macos-x64.dmg" },
+  "windows-x64": { platform: "windows", label: "Windows · x64", file: "webagentmate-bridge-windows-x64.exe" },
+  "linux-deb": { platform: "linux", label: "Linux · Ubuntu / Debian (.deb)", file: "webagentmate-bridge-linux-x64.deb" },
+  "linux-rpm": { platform: "linux", label: "Linux · Fedora (.rpm)", file: "webagentmate-bridge-linux-x64.rpm" }
 } as const;
 export type BridgePackage = keyof typeof BRIDGE_PACKAGES;
+export type BridgePlatform = typeof BRIDGE_PACKAGES[BridgePackage]["platform"];
 export function defaultBridgePackage(platform: Pick<chrome.runtime.PlatformInfo, "os" | "arch">): BridgePackage | undefined {
   if (platform.os === "mac") return platform.arch === "arm" || platform.arch === "arm64" ? "macos-arm64" : platform.arch === "x86-64" ? "macos-x64" : undefined;
   if (platform.os === "win" && platform.arch === "x86-64") return "windows-x64";

@@ -326,3 +326,12 @@ ZIP 完整性和必要文件检查通过。Bridge 包包含可执行文件、安
 - 发布后匿名版本 API 返回 HTTP 200，`draft=false`，Latest 为 v0.6.0；直接运行扩展现有 `bridgeAsset`，五个平台安装器均解析成功。对 10 个安装包/ZIP 的公开下载链接实际请求前 1,024 字节，全部返回 HTTP 206 且字节数一致；公开更新清单签名及其四个平台资产的 URL、大小、SHA-256 校验通过。
 - 本轮验证范围为实际发布状态、下载解析、匿名文件读取和更新清单完整性；未操作 Chrome 下载按钮，未重复实际安装或更新流程，既有 RPM 图形安装等未验证范围保持原记录。Chrome 商店后台状态及已保存的审核说明未在本轮更新。
 - 核对记录：`build/release-v0.6.0/publication-2026-09-17/before.json`、`release-notes.md`、`public-verification.json`。中英文 README、安装文档和商店提交记录已同步公开下载状态。
+
+## 2026-09-17：按系统展示安装说明，提供 macOS 命令安装
+
+- 在工作分支 `feat/platform-install-guide` 将六种语言的说明拆为 macOS、Windows、Linux 标签，默认使用 Chrome 返回的系统信息。切换标签同步安装包选择，不触发下载；异步系统检测不覆盖用户已选的平台，切回 macOS 时恢复当前 Mac 的架构。
+- macOS 增加默认的「命令安装」及可切换的「图形安装」。命令包含扩展的实际版本和 ID，识别 Intel、Apple Silicon 和 Rosetta，通过 HTTPS 下载既有完整 ZIP 和校验和，SHA-256 验证成功后运行包内安装脚本。命令不修改安全设置、全局 PATH、shell 配置或系统 Node；复制失败时自动展开可手动复制的原文。
+- 本地生产构建、类型及六语言检查通过，112 项自动化测试通过；新增命令测试覆盖版本/扩展 ID 输入约束、两种架构、Rosetta、下载失败及校验失败时停止安装。
+- 使用独立 Chrome for Testing 加载实际 `dist/`，模拟 Chrome 的系统和下载接口，六种语言分别验证默认系统、三系统切换、安装包选择、复制及失败回退、键盘操作、Esc 关闭与焦点恢复。320/400/600 px 布局及深浅主题已检查；这不是对用户已安装扩展的操作。截图：`.test-output/install-guide-<language>-<width>.png`，测试脚本 `.test-output/install-guide-ui.cjs`。
+- 实际从公开 v0.6.0 下载 Mac Intel 完整 ZIP 和校验和，核对 SHA-256 后解压；内置 Node 无下载隔离属性并可直接启动。对该真实 payload 执行 `verify-install.cjs`，在隔离目录完成安装、运行时加载、升级和卸载登记；没有安装到用户当前账户。此验证不等同于在所有 macOS 安全策略和设备上验证首次安装。
+- macOS 两种架构的 `Verify native updater` 分支验证待完成。本地 `dist/` 已更新，GitHub 已发布的 v0.6.0 文件和商店提交包保持原版本；新安装界面尚未发布为新的扩展包。
