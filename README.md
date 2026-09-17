@@ -133,7 +133,7 @@ For browser tasks, load `webagentmate-extension.zip` from a published release. F
 
 All Connector packages include a private Node.js runtime and dependency licenses. The private runtime does not replace your existing Node or modify global PATH. Users do not run terminal commands or install Node.js. After installation, click **Check again** in the extension; Chrome starts the Connector when needed. macOS requires 13.5+; Linux packages target Ubuntu 22.04+/Debian 12+ and compatible glibc 2.35+ systems.
 
-These are the new packaging targets, not a claim that a new release is already published. Missing compatible assets show an unavailable message. Older v0.2.x packages do not include the v0.6 runtime. macOS public releases require Developer ID signing and notarization; Windows public installers require code signing. See [installer development](docs/INSTALLER-DEVELOPMENT.md) and the [user installation guide](docs/BRIDGE-INSTALL.md).
+[Download v0.6.0](https://github.com/wintc23/web-agent-mate/releases/tag/v0.6.0), published on 2026-09-17, for all packages listed above. The macOS installers have no Developer ID signature or Apple notarization, and the Windows installer has no publisher signature; your operating system may ask you to confirm installation. Automatic updates retain signed manifests and SHA-256 verification. See [installer development](docs/INSTALLER-DEVELOPMENT.md) and the [user installation guide](docs/BRIDGE-INSTALL.md).
 
 ### First conversation
 

@@ -59,6 +59,8 @@ The update signing private key belongs in the repository Actions secret `WAM_UPD
 
 `workflow_dispatch` builds development artifacts without publishing a GitHub Release. Pushing a version tag builds all platforms and publishes only after installer checks and signing requirements pass. Keep the tag, extension manifest version and installer version aligned: the download button requests the release matching the installed extension version and will report unavailable when that version's installer is absent.
 
+For v0.6.0, the maintainer explicitly authorized publication without operating-system signing on 2026-09-17. The existing verified draft assets were published directly, with their unsigned status disclosed in the release notes. Runtime-verification records, bundled Node, asset hashes and the Ed25519 update manifest were checked; installer code and the automatic publication workflow were not changed. This release is available at [v0.6.0](https://github.com/wintc23/web-agent-mate/releases/tag/v0.6.0).
+
 Configure these repository Actions secrets for public macOS releases:
 
 - `WAM_MAC_CERTIFICATE`: base64-encoded Developer ID Application P12 certificate.
@@ -66,7 +68,7 @@ Configure these repository Actions secrets for public macOS releases:
 - `WAM_MAC_SIGN_IDENTITY`: the complete Developer ID Application signing identity.
 - `WAM_APPLE_ID`, `WAM_APPLE_TEAM_ID`, `WAM_APPLE_APP_PASSWORD`: Apple notarization credentials.
 
-The macOS job imports the certificate into a temporary runner keychain, signs the embedded executables and application, signs the DMG, submits it to Apple, and staples the notarization ticket. Local builds can use `WAM_MAC_SIGN_IDENTITY` and a `WAM_NOTARY_PROFILE` already stored with `notarytool`. Without these, the output has an ad-hoc development signature and is not eligible for public release.
+The macOS job imports the certificate into a temporary runner keychain, signs the embedded executables and application, signs the DMG, submits it to Apple, and staples the notarization ticket. Local builds can use `WAM_MAC_SIGN_IDENTITY` and a `WAM_NOTARY_PROFILE` already stored with `notarytool`. Without these, the output has an ad-hoc development signature and does not pass the automated publication check.
 
 For Windows, configure `WAM_WINDOWS_CERTIFICATE_BASE64` and `WAM_WINDOWS_CERTIFICATE_PASSWORD` with a supported code-signing PFX. The workflow locates `signtool`, signs and timestamps the EXE, and verifies the result. A hardware- or cloud-backed certificate requires adapting the signing step to that provider. Local builds accept `WAM_WINDOWS_CERTIFICATE` as the PFX path and optionally `WAM_SIGNTOOL`/`WAM_MAKENSIS` as tool paths.
 

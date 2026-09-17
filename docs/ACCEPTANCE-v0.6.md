@@ -317,3 +317,12 @@ ZIP 完整性和必要文件检查通过。Bridge 包包含可执行文件、安
 - 用户选定青绿色平面版预览后，将同一图片设为网站封面；文件与完整提示词保存至 `docs/portfolio-assets/cover-editorial-v2.png` 和 `docs/portfolio-assets/PROMPTS.md`。
 - 保存前比较全部表单字段，确认只变更封面。公开详情页、作品列表及 Open Graph/Twitter 预览已使用新地址，原有三张产品截图及说明保持一致，审核与发布准备信息未重新出现。
 - 从 CDN 下载的新封面与用户选定的预览逐字节一致：1586 × 992 PNG，1,281,008 字节，SHA-256 为 `7e53a930c7d8a12fa49e19480871dbb7b9b1d2db0c60a8eac2926fc39ebe30b8`。
+
+## 2026-09-17：公开发布 v0.6.0，恢复连接助手下载
+
+- 排查确认 v0.6.0 仍为 GitHub 草稿，匿名查询对应版本返回 HTTP 404，而扩展下载逻辑要求与自身版本一致的公开 Release。用户明确要求“不用签名了，直接发”。
+- 按此授权将现有 [v0.6.0](https://github.com/wintc23/web-agent-mate/releases/tag/v0.6.0) 草稿公开并设为 Latest，发布时间为 `2026-09-17T12:06:48Z`，目标提交仍为 `98b3f9313facf75d2a7701f98e62fc5ac02fa0ca`。发布说明明确 macOS 未进行 Developer ID 签名/公证、Windows 未进行发布者签名；保留自动更新的 Ed25519 签名及全部 SHA-256 校验和。
+- 发布前逐一核对 23 个已上传文件的大小、状态与 SHA-256，均与既有验收产物一致；四平台 ZIP 的运行验证记录、平台/架构、版本及内置 Node 均匹配。使用现有 Node 24.20.0 执行 `verifyRelease`，更新清单签名及四个 ZIP 的绑定校验通过。本次未改安装器、Bridge、扩展或工作流代码，未重跑已通过的跨平台构建与安装验收。
+- 发布后匿名版本 API 返回 HTTP 200，`draft=false`，Latest 为 v0.6.0；直接运行扩展现有 `bridgeAsset`，五个平台安装器均解析成功。对 10 个安装包/ZIP 的公开下载链接实际请求前 1,024 字节，全部返回 HTTP 206 且字节数一致；公开更新清单签名及其四个平台资产的 URL、大小、SHA-256 校验通过。
+- 本轮验证范围为实际发布状态、下载解析、匿名文件读取和更新清单完整性；未操作 Chrome 下载按钮，未重复实际安装或更新流程，既有 RPM 图形安装等未验证范围保持原记录。Chrome 商店后台状态及已保存的审核说明未在本轮更新。
+- 核对记录：`build/release-v0.6.0/publication-2026-09-17/before.json`、`release-notes.md`、`public-verification.json`。中英文 README、安装文档和商店提交记录已同步公开下载状态。

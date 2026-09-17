@@ -10,9 +10,9 @@ Open **Settings → Local connection → Download Connector**. The button downlo
 
 打开**设置 → 本地连接 → 下载 连接助手**，按钮会直接下载匹配扩展版本和系统的安装器。旁边的菜单可选择其他平台或 Linux 软件包格式。下载完成后，从 Chrome 下载列表打开文件。
 
-If a compatible installer has not been published, the extension says so and keeps your conversations and drafts. Development builds are not public releases.
+[v0.6.0 installers are available](https://github.com/wintc23/web-agent-mate/releases/tag/v0.6.0) for macOS, Windows and Linux. The macOS packages have no Developer ID signature or Apple notarization, and the Windows package has no publisher signature; the system may ask you to confirm installation.
 
-若匹配版本尚未发布，插件会明确提示，会话和草稿会保留。开发测试包与正式发布包是分开的。
+[v0.6.0 安装包已公开下载](https://github.com/wintc23/web-agent-mate/releases/tag/v0.6.0)，支持 macOS、Windows 和 Linux。macOS 安装包未进行 Developer ID 签名和 Apple 公证，Windows 安装包未进行发布者签名，首次打开时系统可能要求确认允许安装。
 
 ## macOS
 

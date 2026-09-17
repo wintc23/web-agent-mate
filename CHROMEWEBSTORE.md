@@ -1,16 +1,16 @@
 # Chrome Web Store submission notes
 
-Last updated: 2026-09-15
+Last updated: 2026-09-17
 
 ## Submission status and listing fields
 
-**Status:** version **0.6.0 submitted for review on 2026-09-13**. The authenticated [Developer Dashboard](https://chrome.google.com/webstore/devconsole/aa0b0589-7124-48d0-a575-987ae8c2241d/lmlkkallnnjijicmfmfdelnamcnhflfg/edit/status) reports **Pending review / 待审核**. Automatic publication after approval is enabled. The extension is not yet publicly available in the Store.
+**Last verified Store status (2026-09-15):** version **0.6.0 submitted for review on 2026-09-13**. The authenticated [Developer Dashboard](https://chrome.google.com/webstore/devconsole/aa0b0589-7124-48d0-a575-987ae8c2241d/lmlkkallnnjijicmfmfdelnamcnhflfg/edit/status) reported **Pending review / 待审核**. Automatic publication after approval is enabled. Store status was not rechecked during the 2026-09-17 GitHub release.
 
 Submission updated the existing WebMate 0.1.0 draft to WebAgentMate 0.6.0, preserving the extension ID. English and Simplified Chinese descriptions, the icon, two global English screenshots and three localized Chinese screenshots were saved. All permission justifications, the five declared data categories, privacy-policy URL and reviewer instructions were saved. Distribution is public in all available regions. Google displayed the broad-host-permission review notice before accepting the submission.
 
 The Store's homepage validator timed out on `https://wintc.top/products/webagentmate`. The submitted homepage therefore uses the GitHub project page; this passed the Store's submission validation.
 
-GitHub v0.6.0 has a [release draft](https://github.com/wintc23/web-agent-mate/releases) targeting `98b3f9313facf75d2a7701f98e62fc5ac02fa0ca`. It is not public; macOS Developer ID signing/notarization and Windows publisher signing remain unconfigured. Creating this draft does not submit the extension to the Chrome Web Store.
+GitHub [v0.6.0](https://github.com/wintc23/web-agent-mate/releases/tag/v0.6.0) was publicly released on 2026-09-17 at `98b3f9313facf75d2a7701f98e62fc5ac02fa0ca` and marked Latest. The maintainer authorized publishing the existing verified packages without macOS Developer ID signing/notarization or Windows publisher signing. All Connector packages include private Node; SHA-256 checksums and the signed automatic-update manifest remain available. Anonymous installer downloads and the extension's version-matched asset resolution passed verification.
 
 Submitted package: `release/artifacts/webagentmate-chrome-0.6.0.zip` (517,996 bytes, 16 runtime files). SHA-256: `45e6b47c6712c763d1c325e2bb6100ad7229e75a07634176b08a8c38f86ea6e6`. The archive has `manifest.json` at its root and excludes source, screenshots, documentation, source maps, credentials and desktop installers. The dashboard's Package page confirmed version 0.6.0 and the current permissions, including `alarms`.
 
@@ -155,7 +155,9 @@ Web page text, selected text, URLs, visible control metadata, prompts, authentic
 
 ## Reviewer flow
 
-1. Use Chrome 116 or newer. Install the extension and click the toolbar icon to open the side panel. Built-in browser tasks do not require additional desktop software. Local files/commands or Codex/Claude require the matching Connector. As of 2026-09-10, GitHub's latest published release is 0.2.2; the extension correctly reports unavailable downloads for 0.6.0. To test optional local capabilities before matching installers are published, follow the source-build instructions in README.md and docs/BRIDGE-INSTALL.md. Do not install an older Connector to test 0.6.0.
+These repository instructions were updated on 2026-09-17. The reviewer text saved in the Store dashboard on 2026-09-13 predates the Connector publication and was not edited during this release.
+
+1. Use Chrome 116 or newer. Install the extension and click the toolbar icon to open the side panel. Built-in browser tasks do not require additional desktop software. Local files/commands or Codex/Claude require the matching Connector. Download the public 0.6.0 installer through **Settings → Local connection → Download Connector**, install it, then click **Check again**. The macOS and Windows installers lack platform publisher signing; the system may ask for confirmation when opening them. See docs/BRIDGE-INSTALL.md for platform instructions.
 2. Settings opens on Models. For the built-in agent, connect OrcaRouter there using browser sign-in. Open Local to check or install Bridge when using local capabilities. Verify the regular-weight disclosure above the sign-in button identifies it as a referral entry and explains the commission without hovering or clicking. The explanation is also associated with the button for screen readers. Clicking the sign-in button opens an authorization URL with the partner referral code. Codex and Claude Code use their own installed CLIs and authentication.
 3. Open the model/Agent dialog and choose Built-in, Codex or Claude Code. Selecting Codex exposes Configuration, Skills, MCP and History within the same dialog. Check that conversation changes are staged until saved, while skill switches and MCP sign-in apply immediately. Save and use skill applies the selected Codex configuration and inserts the skill into the draft. History import creates an independent branch. There is no separate Codex capabilities button in the composer. Built-in defaults to browser tools; enable **Local files and commands** to use Bridge and choose a working directory. Native engines always require Bridge. Check the download, installation-guide and recheck controls when Bridge is missing.
 4. Ask a question or request a page task. When OrcaRouter is disconnected, click Settings in the connection reminder to open Models; the unsent draft is preserved. Verify that the permission button explicitly shows Permissions: Ask or Permissions: Auto, and its menu explains the two modes. Review tool approval requests. Press Enter to send or use the stop button to cancel. Browser tool results return directly to the browser loop or, for local mode, through Native Messaging.
@@ -170,6 +172,8 @@ Refresh all store screenshots for 0.6.0. Include the Agent avatar, an in-progres
 Capture the vertical Settings navigation in wide and narrow layouts, and the separate Local section with Bridge installation and connection checks. The Models screenshots should show the regular-weight referral and commission disclosure above the full-width OrcaRouter sign-in button in both light and dark themes. Refresh composer screenshots to show the explicit permission label and the clickable Settings connection reminder.
 
 ## Version history
+
+- 0.6.0 (GitHub release, 2026-09-17) — Published the verified extension and complete Connector packages as Latest, with maintainer authorization to omit operating-system signing. Verified anonymous downloads for all ten packages, all five installer choices in the extension's resolver, and the public signed update manifest. Updated repository download instructions; Store dashboard status and text were not changed.
 
 - 0.6.0 (submitted for review, 2026-09-13) — Updated the existing Store item with the verified extension ZIP, English/Chinese listing, five screenshots, permissions/privacy disclosures and reviewer instructions. Dashboard confirmed Pending review; automatic publication after approval is enabled. Store homepage changed to the GitHub repository after the portfolio URL failed Google's connection check.
 
